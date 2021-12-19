@@ -8,6 +8,7 @@
 
 //Variables
 int MPU6500_WAI = 0;
+int AK8963_WAI = 0;
 int MPU9250_DRDY = 0;
 
 unsigned char MPU9250_tx;
@@ -136,10 +137,10 @@ uint8_t MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *Datastruct)
 	Datastruct->ASAY = MPU9250_rx_buf[1];
 	Datastruct->ASAZ = MPU9250_rx_buf[2];
 
-	HAL_I2C_Mem_Read(I2Cx, AK8963_ADDR, AK8963_WIA, 1, &MPU9250_rx, 3, 100);
+	HAL_I2C_Mem_Read(I2Cx, AK8963_ADDR, AK8963_WIA, 1, &AK8963_WAI, 3, 100);
 	HAL_Delay(10);
 
-	if(MPU9250_rx == 0b01001000)
+	if(AK8963_WAI == 0b01001000)
 	{
 		return 1;
 	}
