@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "MPU9250.h"
+#include "w25qxx.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -137,6 +138,12 @@ int main(void)
 	}
 	MPU9250_Master(&hi2c1);
 	MPU9250_Slave0_Enable(&hi2c1);
+
+	//Initialize MS5611
+
+	//EEPROM
+	W25qxx_Init();
+	W25qxx_EraseChip();
 
 
 	while (1)
