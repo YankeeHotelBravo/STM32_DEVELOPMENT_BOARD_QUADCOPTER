@@ -131,11 +131,18 @@ int main(void)
 		if(tim1_10ms_flag == 1)
 		{
 			tim1_10ms_flag = 0;
-			printf("MPU9250 Initializing");
+			printf("MPU9250 Initializing \n");
 		}
 	}
 	MPU9250_Bypass(&hi2c1);
-	MPU9250_AK8963_Setup(&hi2c1, &MPU9250);
+	while(MPU9250_AK8963_Setup(&hi2c1, &MPU9250) == 0)
+	{
+		if(tim1_10ms_flag == 1)
+		{
+			tim1_10ms_flag = 0;
+			printf("AK8963 Initializing \n");
+		}
+	}
 	MPU9250_Master(&hi2c1);
 	MPU9250_Slave0_Enable(&hi2c1);
 
@@ -152,13 +159,18 @@ int main(void)
 		if(tim1_2ms_flag == 1)
 		{
 			tim1_2ms_flag = 0;
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
 			MPU9250_Read_All(&hi2c1);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
 		}
 
+		//Print
 		if(tim1_10ms_flag == 1)
 		{
 			tim1_10ms_flag = 0;
-			printf("%f \t %f \t %f \t \n", MPU9250.Mx, MPU9250.My, MPU9250.Mz);
+//			printf("%d \t %d \t %d \t \n", MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
+//			printf("%d \t %d \t %d \t \n", MPU9250.Mx_Raw, MPU9250.My_Raw, MPU9250.Mz_Raw);
+//			printf("%.1f \t %.1f \t %.1f \t \n", MPU9250.Mx, MPU9250.My, MPU9250.Mz);
 		}
 		/* USER CODE END WHILE */
 

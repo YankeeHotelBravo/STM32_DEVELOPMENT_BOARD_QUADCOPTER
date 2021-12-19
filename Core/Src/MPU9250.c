@@ -58,7 +58,7 @@ uint8_t MPU9250_Init(I2C_HandleTypeDef *I2Cx, uint8_t Gyro_FS, uint8_t Acc_FS, u
 		break;
 	}
 
-	HAL_I2C_Mem_Read(I2Cx, MPU6500_ADDR, MPU6500_WAI, 1, &MPU9250_rx, 1, 100);
+	HAL_I2C_Mem_Read(I2Cx, MPU6500_ADDR, MPU6500_WHO_AM_I, 1, &MPU9250_rx, 1, 100);
 	if (MPU9250_rx == 0x71)
 	{
 		MPU9250_tx = 0x01; // Set Sampling by 2 = 500Hz
@@ -117,21 +117,33 @@ void MPU9250_Master(I2C_HandleTypeDef *I2Cx)
 	MPU9250_tx = 0b00001101; //Set I2C Clock to 400kHz
 	HAL_I2C_Mem_Write(I2Cx, MPU6500_ADDR, MPU6500_I2C_MST_CTRL, 1, &MPU9250_tx, 1, 100); //Master Clock to 400kHz
 	HAL_Delay(10);
+
+	MPU9250_tx = 0x00;
+	HAL_I2C_Mem_Write(I2Cx, MPU6500_ADDR, MPU6500_PWR_MGMT_1, 1, &MPU9250_tx, 1, 100);
+	HAL_Delay(10);
 }
 
-void MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *Datastruct)
+uint8_t MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *Datastruct)
 {
-	MPU9250_tx = 0b00010110; //Continuous Mode 2 (100Hz) + 16Bit Output
+	MPU9250_tx = AK8963_CNTL1_Continous2; //Continuous Mode 2 (100Hz) + 16Bit Output
 	HAL_I2C_Mem_Write(I2Cx, AK8963_ADDR, AK8963_CNTL1, 1, &MPU9250_tx, 1, 100);
 	HAL_Delay(10);
 
-	MPU9250_tx = 0b00100000; //Fill Slave0 DO
 	HAL_I2C_Mem_Read(I2Cx, AK8963_ADDR, AK8963_ASAX, 1, &MPU9250_rx_buf[0], 3, 100);
 	HAL_Delay(10);
 
 	Datastruct->ASAX = MPU9250_rx_buf[0];
 	Datastruct->ASAY = MPU9250_rx_buf[1];
 	Datastruct->ASAZ = MPU9250_rx_buf[2];
+
+	HAL_I2C_Mem_Read(I2Cx, AK8963_ADDR, AK8963_WIA, 1, &MPU9250_rx, 3, 100);
+	HAL_Delay(10);
+
+	if(MPU9250_rx == 0b01001000)
+	{
+		return 1;
+	}
+	else return 0;
 }
 
 void MPU9250_Slave0_Enable(I2C_HandleTypeDef *I2Cx)
@@ -144,7 +156,7 @@ void MPU9250_Slave0_Enable(I2C_HandleTypeDef *I2Cx)
 	HAL_I2C_Mem_Write(I2Cx, MPU6500_ADDR, MPU6500_I2C_SLV0_REG, 1, &MPU9250_tx, 1, 100);
 	HAL_Delay(10);
 
-	MPU9250_tx = 0x80 | 0x06; //Number of data bytes
+	MPU9250_tx = 0x80 | 0x07; //Number of data bytes
 	HAL_I2C_Mem_Write(I2Cx, MPU6500_ADDR, MPU6500_I2C_SLV0_CTRL, 1, &MPU9250_tx, 1, 100);
 	HAL_Delay(10);
 }

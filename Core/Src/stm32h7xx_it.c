@@ -304,6 +304,7 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
   if(hi2c->Instance == I2C1)
   {
 	  MPU9250_DRDY = 1;
+//	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
   }
 
   /* NOTE : This function should not be modified, when the callback is needed,

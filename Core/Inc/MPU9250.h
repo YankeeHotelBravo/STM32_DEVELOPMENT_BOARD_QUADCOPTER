@@ -14,7 +14,7 @@
 
 
 // MPU6500 Register
-#define MPU6500_ADDR 0xE2 //Already Left Shifted
+#define MPU6500_ADDR 0xD0 //Already Left Shifted
 
 #define MPU6500_SMPLRT_DIV 0x19
 #define MPU6500_CONFIG 0x1A
@@ -41,7 +41,7 @@
 #define MPU6500_WHO_AM_I 0x75
 
 //AK8963 Register
-#define AK8963_ADDR 0x90 //Already Left Shifted
+#define AK8963_ADDR 0x18 //Already Left Shifted
 #define AK8963_WIA 0x00
 #define AK8963_HXL 0x03
 #define AK8963_CNTL1 0x0A
@@ -104,7 +104,7 @@ MPU9250_t MPU9250;
 uint8_t MPU9250_Init(I2C_HandleTypeDef *I2Cx, uint8_t Gyro_FS, uint8_t Acc_FS, uint8_t DLPF_CFG, uint8_t A_DLPF_CFG);
 void MPU9250_Bypass(I2C_HandleTypeDef *I2Cx);
 void MPU9250_Master(I2C_HandleTypeDef *I2Cx);
-void MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *Datastruct);
+uint8_t MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *Datastruct);
 void MPU9250_Slave0_Enable(I2C_HandleTypeDef *I2Cx);
 void MPU9250_Read_All(I2C_HandleTypeDef *I2Cx);
 void MPU9250_Parsing(MPU9250_t *DataStruct);
