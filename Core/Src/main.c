@@ -56,6 +56,9 @@ extern uint8_t tim1_2ms_flag;
 extern uint8_t tim1_10ms_flag;
 
 extern int MPU9250_DRDY;
+
+uint8_t buffer1[4] = {1, 2, 3, 4};
+uint8_t buffer2[4] = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -128,6 +131,7 @@ int main(void)
 		}
 	}
 	MPU9250_Bypass(&hi2c1);
+//	MPU9250_AK8963_Setup(&hi2c1, &MPU9250);
 	while(MPU9250_AK8963_Setup(&hi2c1, &MPU9250) == 0)
 	{
 		if(tim1_10ms_flag == 1)
@@ -144,6 +148,9 @@ int main(void)
 	//EEPROM
 	W25qxx_Init();
 	W25qxx_EraseChip();
+
+	W25qxx_WritePage(buffer1, 0, 0, 4);
+	W25qxx_ReadPage(buffer2, 0, 0, 4);
 
 
 	while (1)
@@ -170,6 +177,7 @@ int main(void)
 //			printf("%d \t %d \t %d \t \n", MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
 //			printf("%d \t %d \t %d \t \n", MPU9250.Mx_Raw, MPU9250.My_Raw, MPU9250.Mz_Raw);
 //			printf("%.1f \t %.1f \t %.1f \t \n", MPU9250.Mx, MPU9250.My, MPU9250.Mz);
+			printf("%d \t %d \t %d \t %d \t \n", buffer2[0], buffer2[1], buffer2[2], buffer2[3]);
 		}
     /* USER CODE END WHILE */
 
