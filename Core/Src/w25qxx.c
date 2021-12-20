@@ -673,6 +673,7 @@ void W25qxx_WritePage(uint8_t *pBuffer, uint32_t Page_Address, uint32_t OffsetIn
 	W25qxx_Spi((Page_Address & 0xFF00) >> 8);
 	W25qxx_Spi(Page_Address & 0xFF);
 //	HAL_SPI_Transmit(&_W25QXX_SPI, pBuffer, NumByteToWrite_up_to_PageSize, 100);
+	HAL_QSPI_Command(hqspi, cmd, Timeout)
 	HAL_QSPI_Transmit(&_W25QXX_SPI, pBuffer, 100);
 	HAL_GPIO_WritePin(_W25QXX_CS_GPIO, _W25QXX_CS_PIN, GPIO_PIN_SET);
 	W25qxx_WaitForWriteEnd();
