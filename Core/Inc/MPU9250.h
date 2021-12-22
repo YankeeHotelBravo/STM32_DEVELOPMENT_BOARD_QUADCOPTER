@@ -85,17 +85,22 @@ typedef struct MPU9250_t
 	uint8_t ASAY;
 	uint8_t ASAZ;
 
-	int16_t Mx_Offset;
-	int16_t My_Offset;
-	int16_t Mz_Offset;
+	float Mx_Min;
+	float My_Min;
+	float Mz_Min;
+
+	float Mx_Max;
+	float My_Max;
+	float Mz_Max;
+
+	float Mx_Offset;
+	float My_Offset;
+	float Mz_Offset;
 
 	float Mx;
 	float My;
 	float Mz;
 
-	float Roll;
-	float Pitch;
-	float Yaw;
 }MPU9250_t;
 
 MPU9250_t MPU9250;

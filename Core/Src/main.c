@@ -44,7 +44,7 @@
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 
-QSPI_HandleTypeDef hqspi;
+SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim7;
 
@@ -57,18 +57,21 @@ extern uint8_t tim1_10ms_flag;
 
 extern int MPU9250_DRDY;
 
+uint8_t Mag_Calib[12];
+
 uint8_t buffer1[4] = {1, 2, 3, 4};
 uint8_t buffer2[4] = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM7_Init(void);
-static void MX_QUADSPI_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -103,6 +106,9 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
+/* Configure the peripherals common clocks */
+  PeriphCommonClock_Config();
+
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
@@ -111,11 +117,11 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM7_Init();
-  MX_QUADSPI_Init();
   MX_USART1_UART_Init();
   MX_I2C1_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-	HAL_TIM_Base_Start_IT(&htim7);
+  HAL_TIM_Base_Start_IT(&htim7);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -143,14 +149,64 @@ int main(void)
 	MPU9250_Master(&hi2c1);
 	MPU9250_Slave0_Enable(&hi2c1);
 
+
 	//Initialize MS5611
 
 	//EEPROM
 	W25qxx_Init();
-	W25qxx_EraseChip();
 
-	W25qxx_WritePage(buffer1, 0, 0, 4);
-	W25qxx_ReadPage(buffer2, 0, 0, 4);
+
+	//Compass Calibration
+	int SwC = 0;
+	if(SwC == 1500)
+	{
+		for(int i =0;i<20;i++)
+		{
+			MPU9250_Read_All(&hi2c1);
+			HAL_Delay(20);
+			MPU9250_Parsing_NoOffset(&MPU9250);
+		}
+		MPU9250.Mx_Max = MPU9250.Mx_Raw;
+		MPU9250.Mx_Min = MPU9250.Mx_Raw;
+		MPU9250.My_Max = MPU9250.My_Raw;
+		MPU9250.My_Min = MPU9250.My_Raw;
+		MPU9250.Mz_Max = MPU9250.Mz_Raw;
+		MPU9250.Mz_Min = MPU9250.Mz_Raw;
+
+		while(SwC != 1000)
+		{
+//			Is_iBus_Received();
+			MPU9250_Read_All(&hi2c1);
+			HAL_Delay(10);
+			MPU9250_Parsing_NoOffset(&MPU9250);
+			if(MPU9250.Mx > MPU9250.Mx) MPU9250.Mx_Max = MPU9250.Mx_Raw;
+			if(MPU9250.Mx < MPU9250.Mx) MPU9250.Mx_Min = MPU9250.Mx_Raw;
+
+			if(MPU9250.My > MPU9250.My) MPU9250.My_Max = MPU9250.My_Raw;
+			if(MPU9250.My < MPU9250.My) MPU9250.My_Min = MPU9250.My_Raw;
+
+			if(MPU9250.Mz > MPU9250.Mz) MPU9250.Mz_Max = MPU9250.Mz_Raw;
+			if(MPU9250.Mz < MPU9250.Mz) MPU9250.Mz_Min = MPU9250.Mz_Raw;
+			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
+		}
+		MPU9250.Mx_Offset = (MPU9250.Mx_Max + MPU9250.Mx_Min) / 2;
+		MPU9250.My_Offset = (MPU9250.My_Max + MPU9250.My_Min) / 2;
+		MPU9250.Mz_Offset = (MPU9250.Mz_Max + MPU9250.Mz_Min) / 2;
+
+		*(float*)&Mag_Calib[0] = MPU9250.Mx_Offset;
+		*(float*)&Mag_Calib[4] = MPU9250.My_Offset;
+		*(float*)&Mag_Calib[8] = MPU9250.Mz_Offset;
+
+
+		W25qxx_WritePage(Mag_Calib, 0, 0, 12);
+	}
+
+	HAL_Delay(100);
+	W25qxx_ReadPage(Mag_Calib, 0, 0, 12);
+	MPU9250.Mx_Offset = *(float*)&Mag_Calib[0];
+	MPU9250.My_Offset = *(float*)&Mag_Calib[4];
+	MPU9250.Mz_Offset = *(float*)&Mag_Calib[8];
+
 
 
 	while (1)
@@ -177,8 +233,8 @@ int main(void)
 //			printf("%d \t %d \t %d \t \n", MPU9250.ASAX, MPU9250.ASAY, MPU9250.ASAZ);
 //			printf("%d \t %d \t %d \t \n", MPU9250.Mx_Raw, MPU9250.My_Raw, MPU9250.Mz_Raw);
 //			printf("%.1f \t %.1f \t %.1f \t \n", MPU9250.Mx, MPU9250.My, MPU9250.Mz);
-			printf("%d \t %d \t %d \t %d \t \n", buffer2[0], buffer2[1], buffer2[2], buffer2[3]);
 		}
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -206,8 +262,10 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 5;
@@ -236,6 +294,24 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief Peripherals Common Clock Configuration
+  * @retval None
+  */
+void PeriphCommonClock_Config(void)
+{
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+
+  /** Initializes the peripherals clock
+  */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CKPER;
+  PeriphClkInitStruct.CkperClockSelection = RCC_CLKPSOURCE_HSI;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
@@ -288,37 +364,50 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief QUADSPI Initialization Function
+  * @brief SPI1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_QUADSPI_Init(void)
+static void MX_SPI1_Init(void)
 {
 
-  /* USER CODE BEGIN QUADSPI_Init 0 */
+  /* USER CODE BEGIN SPI1_Init 0 */
 
-  /* USER CODE END QUADSPI_Init 0 */
+  /* USER CODE END SPI1_Init 0 */
 
-  /* USER CODE BEGIN QUADSPI_Init 1 */
+  /* USER CODE BEGIN SPI1_Init 1 */
 
-  /* USER CODE END QUADSPI_Init 1 */
-  /* QUADSPI parameter configuration*/
-  hqspi.Instance = QUADSPI;
-  hqspi.Init.ClockPrescaler = 255;
-  hqspi.Init.FifoThreshold = 1;
-  hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
-  hqspi.Init.FlashSize = 1;
-  hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
-  hqspi.Init.ClockMode = QSPI_CLOCK_MODE_0;
-  hqspi.Init.FlashID = QSPI_FLASH_ID_1;
-  hqspi.Init.DualFlash = QSPI_DUALFLASH_DISABLE;
-  if (HAL_QSPI_Init(&hqspi) != HAL_OK)
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 0x0;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  hspi1.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
+  hspi1.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
+  hspi1.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi1.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
+  hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
+  hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+  hspi1.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+  hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+  hspi1.Init.IOSwap = SPI_IO_SWAP_DISABLE;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN QUADSPI_Init 2 */
+  /* USER CODE BEGIN SPI1_Init 2 */
 
-  /* USER CODE END QUADSPI_Init 2 */
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -437,14 +526,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PA1 */
   GPIO_InitStruct.Pin = GPIO_PIN_1;
@@ -452,6 +542,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

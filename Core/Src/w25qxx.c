@@ -9,7 +9,7 @@
 #define W25QXX_DUMMY_BYTE 0xA5
 
 w25qxx_t w25qxx;
-extern QSPI_HandleTypeDef _W25QXX_SPI;
+extern SPI_HandleTypeDef _W25QXX_SPI;
 #if (_W25QXX_USE_FREERTOS == 1)
 #define W25qxx_Delay(delay) osDelay(delay)
 #include "cmsis_os.h"
@@ -20,9 +20,7 @@ extern QSPI_HandleTypeDef _W25QXX_SPI;
 uint8_t W25qxx_Spi(uint8_t Data)
 {
 	uint8_t ret;
-//	HAL_QSPI_TransmitReceive(&_W25QXX_SPI, &Data, &ret, 1, 100);
-	HAL_QSPI_Transmit(&_W25QXX_SPI, &Data, 100);
-	HAL_QSPI_Receive(&_W25QXX_SPI, &ret, 100);
+	HAL_SPI_TransmitReceive(&_W25QXX_SPI, &Data, &ret, 1, 100);
 	return ret;
 }
 //###################################################################################################################
@@ -672,9 +670,7 @@ void W25qxx_WritePage(uint8_t *pBuffer, uint32_t Page_Address, uint32_t OffsetIn
 	W25qxx_Spi((Page_Address & 0xFF0000) >> 16);
 	W25qxx_Spi((Page_Address & 0xFF00) >> 8);
 	W25qxx_Spi(Page_Address & 0xFF);
-//	HAL_SPI_Transmit(&_W25QXX_SPI, pBuffer, NumByteToWrite_up_to_PageSize, 100);
-	HAL_QSPI_Command(hqspi, cmd, Timeout)
-	HAL_QSPI_Transmit(&_W25QXX_SPI, pBuffer, 100);
+	HAL_SPI_Transmit(&_W25QXX_SPI, pBuffer, NumByteToWrite_up_to_PageSize, 100);
 	HAL_GPIO_WritePin(_W25QXX_CS_GPIO, _W25QXX_CS_PIN, GPIO_PIN_SET);
 	W25qxx_WaitForWriteEnd();
 #if (_W25QXX_DEBUG == 1)
@@ -880,8 +876,7 @@ void W25qxx_ReadPage(uint8_t *pBuffer, uint32_t Page_Address, uint32_t OffsetInB
 	W25qxx_Spi((Page_Address & 0xFF00) >> 8);
 	W25qxx_Spi(Page_Address & 0xFF);
 	W25qxx_Spi(0);
-//	HAL_SPI_Receive(&_W25QXX_SPI, pBuffer, NumByteToRead_up_to_PageSize, 100);
-	HAL_QSPI_Receive(&_W25QXX_SPI, pBuffer, 100);
+	HAL_SPI_Receive(&_W25QXX_SPI, pBuffer, NumByteToRead_up_to_PageSize, 100);
 	HAL_GPIO_WritePin(_W25QXX_CS_GPIO, _W25QXX_CS_PIN, GPIO_PIN_SET);
 #if (_W25QXX_DEBUG == 1)
 	StartTime = HAL_GetTick() - StartTime;
