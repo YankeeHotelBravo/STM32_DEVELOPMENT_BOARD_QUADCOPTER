@@ -77,6 +77,10 @@ typedef struct MPU9250_t
 	float Gy;
 	float Gz;
 
+	float Gx_Rad;
+	float Gy_Rad;
+	float Gz_Rad;
+
 	int16_t Mx_Raw;
 	int16_t My_Raw;
 	int16_t Mz_Raw;
