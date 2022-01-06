@@ -236,9 +236,11 @@ int main(void)
 		if(tim1_2ms_flag == 1)
 		{
 			tim1_2ms_flag = 0;
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
 			MPU9250_Read_All(&hi2c1);
 			MPU9250_Parsing(&MPU9250);
 			MadgwickAHRSupdate(MPU9250.Gx_Rad, MPU9250.Gy_Rad, MPU9250.Gz_Rad, MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
 		}
 
 		//Print According to the Input
