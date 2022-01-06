@@ -140,10 +140,7 @@ uint8_t MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *Datastruct)
 	HAL_I2C_Mem_Read(I2Cx, AK8963_ADDR, AK8963_WIA, 1, &AK8963_WAI, 3, 100);
 	HAL_Delay(10);
 
-	if(AK8963_WAI == 0b01001000)
-	{
-		return 1;
-	}
+	if(AK8963_WAI == 0b01001000) return 1;
 	else return 0;
 }
 
