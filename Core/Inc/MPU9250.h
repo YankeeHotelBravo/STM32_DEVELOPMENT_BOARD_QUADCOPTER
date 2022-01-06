@@ -9,9 +9,6 @@
 #define INC_MPU9250_H_
 
 #include <main.h>
-#define D2R 0.01745329252
-
-
 
 // MPU6500 Register
 #define MPU6500_ADDR 0xD0 //Already Left Shifted

@@ -7,6 +7,8 @@
 #include "MPU9250.h"
 
 //Variables
+const float D2R = 0.01745329252;
+
 uint8_t MPU6500_WAI;
 uint8_t AK8963_WAI;
 uint8_t MPU9250_DRDY = 0;

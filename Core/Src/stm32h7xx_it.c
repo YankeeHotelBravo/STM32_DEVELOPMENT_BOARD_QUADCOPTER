@@ -43,8 +43,6 @@
 /* USER CODE BEGIN PV */
 extern int MPU9250_DRDY;
 
-uint8_t tim1_2ms_count = 0;
-uint8_t tim1_20ms_count = 0;
 
 uint8_t tim1_2ms_flag = 0;
 uint8_t tim1_20ms_flag = 0;
@@ -284,6 +282,9 @@ void TIM7_IRQHandler(void)
 /* USER CODE BEGIN 1 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	static unsigned int tim1_2ms_count = 0;
+	static unsigned int tim1_20ms_count = 0;
+
 	if(htim->Instance == TIM7)
 	{
 		tim1_2ms_count++;
