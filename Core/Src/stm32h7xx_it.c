@@ -43,17 +43,19 @@
 /* USER CODE BEGIN PV */
 extern int MPU9250_DRDY;
 
-
 uint8_t tim1_2ms_flag = 0;
 uint8_t tim1_20ms_flag = 0;
 
 uint8_t uart1_rx_flag = 0;
 uint8_t uart1_rx_data = 0;
+
+extern uint8_t print_mode;
+extern uint8_t mag_calibration_enable;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
+void Receive_Command(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -308,6 +310,26 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 		uart1_rx_flag = 1;
 		HAL_UART_Receive_IT(&huart1, &uart1_rx_data, 1);
+	}
+}
+
+void Receive_Command(void)
+{
+	if(uart1_rx_flag == 1)
+	{
+		uart1_rx_flag = 0;
+
+		switch(uart1_rx_data)
+		{
+		case '1': print_mode = 1; break; //Roll, Pitch, Yaw
+		case '2': print_mode = 2; break; //Alt Raw, Alt Filt
+		case '3': print_mode = 3; break; //Gyro
+		case '4': print_mode = 4; break; //Accel
+		case '5': print_mode = 5; break; //Mag
+		case '6': print_mode = 6; break; //Mag
+		case '8': mag_calibration_enable = 1; break; //Mag_Raw
+		default: print_mode = 0; mag_calibration_enable = 0; break; // Stop Printing
+		}
 	}
 }
 /* USER CODE END 1 */

@@ -57,11 +57,11 @@ extern uint8_t tim1_2ms_flag;
 extern uint8_t tim1_20ms_flag;
 
 extern int MPU9250_DRDY;
-
 uint8_t Mag_Calib[12];
-
-uint8_t buffer1[4] = {1, 2, 3, 4};
-uint8_t buffer2[4] = {0};
+extern uint8_t MPU9250_ASAX;
+extern uint8_t MPU9250_ASAY;
+extern uint8_t MPU9250_ASAZ;
+float test_float;
 
 extern uint8_t uart1_rx_flag;
 extern uint8_t uart1_rx_data;
@@ -154,6 +154,9 @@ int main(void)
 			printf("AK8963 Initialing \n");
 		}
 	}
+//	MPU9250_ASAX = MPU9250.ASAX;
+//	MPU9250_ASAY = MPU9250.ASAY;
+//	MPU9250_ASAZ = MPU9250.ASAZ;
 	MPU9250_Master(&hi2c1);
 	MPU9250_Slave0_Enable(&hi2c1);
 
@@ -162,85 +165,65 @@ int main(void)
 
 	//EEPROM
 	W25qxx_Init();
-
-
-	// Compass Calibration //
-	int SwC = 0;
-	if(SwC == 1500)
-	{
-		for(int i =0;i<20;i++)
-		{
-			MPU9250_Read_All(&hi2c1);
-			HAL_Delay(20);
-			MPU9250_Parsing_NoOffset(&MPU9250);
-		}
-		MPU9250.Mx_Max = MPU9250.Mx_Raw;
-		MPU9250.Mx_Min = MPU9250.Mx_Raw;
-		MPU9250.My_Max = MPU9250.My_Raw;
-		MPU9250.My_Min = MPU9250.My_Raw;
-		MPU9250.Mz_Max = MPU9250.Mz_Raw;
-		MPU9250.Mz_Min = MPU9250.Mz_Raw;
-
-		while(SwC != 1000)
-		{
-			//			Is_iBus_Received();
-			MPU9250_Read_All(&hi2c1);
-			HAL_Delay(10);
-			MPU9250_Parsing_NoOffset(&MPU9250);
-			if(MPU9250.Mx > MPU9250.Mx) MPU9250.Mx_Max = MPU9250.Mx_Raw;
-			if(MPU9250.Mx < MPU9250.Mx) MPU9250.Mx_Min = MPU9250.Mx_Raw;
-
-			if(MPU9250.My > MPU9250.My) MPU9250.My_Max = MPU9250.My_Raw;
-			if(MPU9250.My < MPU9250.My) MPU9250.My_Min = MPU9250.My_Raw;
-
-			if(MPU9250.Mz > MPU9250.Mz) MPU9250.Mz_Max = MPU9250.Mz_Raw;
-			if(MPU9250.Mz < MPU9250.Mz) MPU9250.Mz_Min = MPU9250.Mz_Raw;
-			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8);
-		}
-		MPU9250.Mx_Offset = (MPU9250.Mx_Max + MPU9250.Mx_Min) / 2;
-		MPU9250.My_Offset = (MPU9250.My_Max + MPU9250.My_Min) / 2;
-		MPU9250.Mz_Offset = (MPU9250.Mz_Max + MPU9250.Mz_Min) / 2;
-
-		*(float*)&Mag_Calib[0] = MPU9250.Mx_Offset;
-		*(float*)&Mag_Calib[4] = MPU9250.My_Offset;
-		*(float*)&Mag_Calib[8] = MPU9250.Mz_Offset;
-
-		W25qxx_EraseSector(0);
-		W25qxx_WriteSector(Mag_Calib, 0, 0, 12);
-	}
-
-	HAL_Delay(100);
 	W25qxx_ReadSector(Mag_Calib, 0, 0, 12);
 	MPU9250.Mx_Offset = *(float*)&Mag_Calib[0];
 	MPU9250.My_Offset = *(float*)&Mag_Calib[4];
 	MPU9250.Mz_Offset = *(float*)&Mag_Calib[8];
-	// Compass Calibration //
 
 	while (1)
 	{
-		if(uart1_rx_flag == 1)
-		{
-			uart1_rx_flag = 0;
+		Receive_Command();
 
-			switch(uart1_rx_data)
+		// Compass Calibration //
+		if(mag_calibration_enable == 1)
+		{
+			for(int i =0;i<5;i++)
 			{
-			case '1': print_mode = 1; break; //Roll, Pitch, Yaw
-			case '2': print_mode = 2; break; //Alt Raw, Alt Filt
-			case '3': print_mode = 3; break; //Gyro
-			case '4': print_mode = 4; break; //Accel
-			case '5': print_mode = 5; break; //Mag
-			default: print_mode = 0; break; // Stop Printing
+				MPU9250_Read_All(&hi2c1);
+				HAL_Delay(1);
+				MPU9250_Parsing_NoOffset(&MPU9250);
 			}
+			MPU9250.Mx_Max = MPU9250.Mx;
+			MPU9250.Mx_Min = MPU9250.Mx;
+			MPU9250.My_Max = MPU9250.My;
+			MPU9250.My_Min = MPU9250.My;
+			MPU9250.Mz_Max = MPU9250.Mz;
+			MPU9250.Mz_Min = MPU9250.Mz;
+
+			while(mag_calibration_enable != 0)
+			{
+				Receive_Command();
+				MPU9250_Read_All(&hi2c1);
+				HAL_Delay(1);
+				MPU9250_Parsing_NoOffset(&MPU9250);
+				if(MPU9250.Mx > MPU9250.Mx_Max) MPU9250.Mx_Max = MPU9250.Mx;
+				if(MPU9250.Mx < MPU9250.Mx_Min) MPU9250.Mx_Min = MPU9250.Mx;
+
+				if(MPU9250.My > MPU9250.My_Max) MPU9250.My_Max = MPU9250.My;
+				if(MPU9250.My < MPU9250.My_Min) MPU9250.My_Min = MPU9250.My;
+
+				if(MPU9250.Mz > MPU9250.Mz_Max) MPU9250.Mz_Max = MPU9250.Mz;
+				if(MPU9250.Mz < MPU9250.Mz_Min) MPU9250.Mz_Min = MPU9250.Mz;
+			}
+			MPU9250.Mx_Offset = (MPU9250.Mx_Max + MPU9250.Mx_Min) / 2;
+			MPU9250.My_Offset = (MPU9250.My_Max + MPU9250.My_Min) / 2;
+			MPU9250.Mz_Offset = (MPU9250.Mz_Max + MPU9250.Mz_Min) / 2;
+
+			*(float*)&Mag_Calib[0] = MPU9250.Mx_Offset;
+			*(float*)&Mag_Calib[4] = MPU9250.My_Offset;
+			*(float*)&Mag_Calib[8] = MPU9250.Mz_Offset;
+
+			W25qxx_EraseSector(0);
+			W25qxx_WriteSector(Mag_Calib, 0, 0, 12);
 		}
+		// Compass Calibration //
 
 		if(tim1_2ms_flag == 1)
 		{
 			tim1_2ms_flag = 0;
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
 			MPU9250_Read_All(&hi2c1);
 			MPU9250_Parsing(&MPU9250);
 			MadgwickAHRSupdate(MPU9250.Gx_Rad, MPU9250.Gy_Rad, MPU9250.Gz_Rad, MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
 		}
 
 		//Print According to the Input
@@ -255,6 +238,7 @@ int main(void)
 			case 3: printf("%.2f \t %.2f \t %.2f \t \n", MPU9250.Gx, MPU9250.Gy, MPU9250.Gz); break; //Gyro
 			case 4: printf("%.2f \t %.2f \t %.2f \t \n", MPU9250.Ax, MPU9250.Ay, MPU9250.Az); break; //Accel
 			case 5: printf("%.2f \t %.2f \t %.2f \t \n", MPU9250.Mx, MPU9250.My, MPU9250.Mz); break; //Mag
+			case 6: printf("%f \t %f \t %f \t \n", MPU9250.Mx_Offset, MPU9250.My_Offset, MPU9250.Mz_Offset); break; //Mag
 			default: break;
 			}
 		}

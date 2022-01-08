@@ -44,9 +44,9 @@
 #define AK8963_CNTL1 0x0A
 #define AK8963_CNTL2 0x0B
 
-#define AK8963_ASAX 0x10
-#define AK8963_ASAY 0x11
-#define AK8963_ASAZ 0x12
+#define AK8963_MPU9250_ASAX 0x10
+#define AK8963_MPU9250_ASAY 0x11
+#define AK8963_MPU9250_ASAZ 0x12
 
 //AK8963 Settings
 #define AK8963_CNTL1_Continous2 0b00010110
@@ -105,6 +105,7 @@ typedef struct MPU9250_t
 }MPU9250_t;
 
 MPU9250_t MPU9250;
+
 
 //Functions
 uint8_t MPU9250_Init(I2C_HandleTypeDef *I2Cx, uint8_t Gyro_FS, uint8_t Acc_FS, uint8_t DLPF_CFG, uint8_t A_DLPF_CFG);
