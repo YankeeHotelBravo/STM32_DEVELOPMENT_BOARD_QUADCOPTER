@@ -20,9 +20,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32h7xx_it.h"
-#include "FS-iA6B.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "FS-iA6B.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,6 +54,7 @@ uint8_t uart2_rx_flag = 0;
 uint8_t uart2_rx_data = 0;
 uint8_t ibus_rx_buf[32];
 uint8_t ibus_rx_cplt_flag = 0;
+uint8_t ibus_rx_error_flag = 0;
 
 extern uint8_t print_mode;
 extern uint8_t mag_calibration_enable;
@@ -75,8 +76,11 @@ extern DMA_HandleTypeDef hdma_i2c1_rx;
 extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim7;
 extern DMA_HandleTypeDef hdma_usart1_tx;
+extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -248,6 +252,34 @@ void DMA1_Stream1_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles DMA1 stream2 global interrupt.
+  */
+void DMA1_Stream2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream2_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart2_rx);
+  /* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA1 stream3 global interrupt.
+  */
+void DMA1_Stream3_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream3_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart3_rx);
+  /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream3_IRQn 1 */
+}
+
+/**
   * @brief This function handles I2C1 event interrupt.
   */
 void I2C1_EV_IRQHandler(void)
@@ -287,6 +319,20 @@ void USART2_IRQHandler(void)
   /* USER CODE BEGIN USART2_IRQn 1 */
 
   /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART3 global interrupt.
+  */
+void USART3_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_IRQn 0 */
+
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
+
+  /* USER CODE END USART3_IRQn 1 */
 }
 
 /**
@@ -333,44 +379,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		uart1_rx_flag = 1;
 		HAL_UART_Receive_IT(&huart1, &uart1_rx_data, 1);
 	}
-
-	if(huart->Instance == USART2)
+	else if(huart->Instance == USART2)
 	{
-		uart2_rx_flag = 1;
-		HAL_UART_Receive_IT(&huart2, &uart2_rx_data, 1);
-
-		static unsigned int cnt = 0;
-
-		switch(cnt)
-		{
-		case 0:
-			if(uart2_rx_data==0x20)
-			{
-				ibus_rx_buf[cnt]=uart2_rx_data;
-				cnt++;
-			}
-			break;
-		case 1:
-			if(uart2_rx_data==0x40)
-			{
-				ibus_rx_buf[cnt]=uart2_rx_data;
-				cnt++;
-			}
-			else
-				cnt=0;
-			break;
-
-		case 31:
-			ibus_rx_buf[cnt]=uart2_rx_data;
-			cnt=0;
-			ibus_rx_cplt_flag = 1;
-			break;
-
-		default:
-			ibus_rx_buf[cnt]=uart2_rx_data;
-			cnt++;
-			break;
-		}
+		if((ibus_rx_buf[0] == 0x20) && (ibus_rx_buf[1] == 0x40)) ibus_rx_cplt_flag = 1;
+		else for(int j = 0; j < 32; j++) ibus_rx_buf[j] = 0;
 	}
 }
 
