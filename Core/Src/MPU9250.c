@@ -95,10 +95,7 @@ uint8_t MPU9250_Init(I2C_HandleTypeDef *I2Cx, uint8_t Gyro_FS, uint8_t Acc_FS, u
 
 		return 1;
 	}
-	else
-	{
-		return 0;
-	}
+	return 0;
 }
 
 void MPU9250_Bypass(I2C_HandleTypeDef *I2Cx)
@@ -152,7 +149,7 @@ uint8_t MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *DataStruct)
 	HAL_Delay(10);
 
 	if(AK8963_WAI == 0b01001000) return 1;
-	else return 0;
+	return 0;
 }
 
 void MPU9250_Slave0_Enable(I2C_HandleTypeDef *I2Cx)

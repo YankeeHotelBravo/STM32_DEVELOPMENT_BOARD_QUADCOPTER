@@ -24,6 +24,7 @@
 #include "MPU9250.h"
 #include "w25qxx.h"
 #include "MadgwickAHRS.h"
+#include "FS-iA6B.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,25 +51,34 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim7;
 
 UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart1_tx;
 
 /* USER CODE BEGIN PV */
+//Timer
 extern uint8_t tim1_2ms_flag;
 extern uint8_t tim1_20ms_flag;
 
+//MPU9250
 extern int MPU9250_DRDY;
 uint8_t Mag_Calib[12];
 extern uint8_t MPU9250_ASAX;
 extern uint8_t MPU9250_ASAY;
 extern uint8_t MPU9250_ASAZ;
 float test_float;
+extern float System_Roll, System_Pitch, System_Yaw;
 
+//FTDI
 extern uint8_t uart1_rx_flag;
 extern uint8_t uart1_rx_data;
 uint8_t print_mode = 0;
 uint8_t mag_calibration_enable = 0;
 
-extern float System_Roll, System_Pitch, System_Yaw;
+//Receiver
+extern uint8_t uart2_rx_flag;
+extern uint8_t uart2_rx_data;
+extern uint8_t ibus_rx_buf[32];
+extern uint8_t ibus_rx_cplt_flag;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,8 +90,9 @@ static void MX_TIM7_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+void Compass_Calibration(uint8_t mag_calibration_enable);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -128,13 +139,21 @@ int main(void)
   MX_USART1_UART_Init();
   MX_I2C1_Init();
   MX_SPI1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim7);
 	HAL_UART_Receive_IT(&huart1, &uart1_rx_data, 1);
+	HAL_UART_Receive_IT(&huart2, &uart2_rx_data, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+	//Receiver Check
+	while(Is_iBus_Received(ibus_rx_cplt_flag) == 0)
+	{
+		HAL_Delay(200);
+	}
 
 	//Initialize MPU9250
 	while(MPU9250_Init(&hi2c1, 3, 3, 3, 3) == 0)
@@ -154,9 +173,6 @@ int main(void)
 			printf("AK8963 Initialing \n");
 		}
 	}
-//	MPU9250_ASAX = MPU9250.ASAX;
-//	MPU9250_ASAY = MPU9250.ASAY;
-//	MPU9250_ASAZ = MPU9250.ASAZ;
 	MPU9250_Master(&hi2c1);
 	MPU9250_Slave0_Enable(&hi2c1);
 
@@ -173,51 +189,19 @@ int main(void)
 	while (1)
 	{
 		Receive_Command();
+		Compass_Calibration(mag_calibration_enable);
 
-		// Compass Calibration //
-		if(mag_calibration_enable == 1)
+		if(ibus_rx_cplt_flag==1)
 		{
-			for(int i =0;i<5;i++)
+			ibus_rx_cplt_flag=0;
+			if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
 			{
-				MPU9250_Read_All(&hi2c1);
-				HAL_Delay(1);
-				MPU9250_Parsing_NoOffset(&MPU9250);
+				iBus_Parsing(&ibus_rx_buf[0], &iBus);
+				return 1;
 			}
-			MPU9250.Mx_Max = MPU9250.Mx;
-			MPU9250.Mx_Min = MPU9250.Mx;
-			MPU9250.My_Max = MPU9250.My;
-			MPU9250.My_Min = MPU9250.My;
-			MPU9250.Mz_Max = MPU9250.Mz;
-			MPU9250.Mz_Min = MPU9250.Mz;
-
-			while(mag_calibration_enable != 0)
-			{
-				Receive_Command();
-				MPU9250_Read_All(&hi2c1);
-				HAL_Delay(1);
-				MPU9250_Parsing_NoOffset(&MPU9250);
-				if(MPU9250.Mx > MPU9250.Mx_Max) MPU9250.Mx_Max = MPU9250.Mx;
-				if(MPU9250.Mx < MPU9250.Mx_Min) MPU9250.Mx_Min = MPU9250.Mx;
-
-				if(MPU9250.My > MPU9250.My_Max) MPU9250.My_Max = MPU9250.My;
-				if(MPU9250.My < MPU9250.My_Min) MPU9250.My_Min = MPU9250.My;
-
-				if(MPU9250.Mz > MPU9250.Mz_Max) MPU9250.Mz_Max = MPU9250.Mz;
-				if(MPU9250.Mz < MPU9250.Mz_Min) MPU9250.Mz_Min = MPU9250.Mz;
-			}
-			MPU9250.Mx_Offset = (MPU9250.Mx_Max + MPU9250.Mx_Min) / 2;
-			MPU9250.My_Offset = (MPU9250.My_Max + MPU9250.My_Min) / 2;
-			MPU9250.Mz_Offset = (MPU9250.Mz_Max + MPU9250.Mz_Min) / 2;
-
-			*(float*)&Mag_Calib[0] = MPU9250.Mx_Offset;
-			*(float*)&Mag_Calib[4] = MPU9250.My_Offset;
-			*(float*)&Mag_Calib[8] = MPU9250.Mz_Offset;
-
-			W25qxx_EraseSector(0);
-			W25qxx_WriteSector(Mag_Calib, 0, 0, 12);
 		}
-		// Compass Calibration //
 
+		//Read MPU9250 + Motor Control
 		if(tim1_2ms_flag == 1)
 		{
 			tim1_2ms_flag = 0;
@@ -238,7 +222,8 @@ int main(void)
 			case 3: printf("%.2f \t %.2f \t %.2f \t \n", MPU9250.Gx, MPU9250.Gy, MPU9250.Gz); break; //Gyro
 			case 4: printf("%.2f \t %.2f \t %.2f \t \n", MPU9250.Ax, MPU9250.Ay, MPU9250.Az); break; //Accel
 			case 5: printf("%.2f \t %.2f \t %.2f \t \n", MPU9250.Mx, MPU9250.My, MPU9250.Mz); break; //Mag
-			case 6: printf("%f \t %f \t %f \t \n", MPU9250.Mx_Offset, MPU9250.My_Offset, MPU9250.Mz_Offset); break; //Mag
+			case 6: printf("%f \t %f \t %f \t \n", MPU9250.Mx_Offset, MPU9250.My_Offset, MPU9250.Mz_Offset); break; //Mag_Offset
+			case 7: printf("%d %d %d %d %d %d %d %d %d %d \n", iBus.LH, iBus.LV, iBus.LV, iBus.LH, iBus.SwA, iBus.SwB, iBus.VrA, iBus.VrB, iBus.SwC, iBus.SwD); break; //Mag_Offset
 			default: break;
 			}
 		}
@@ -506,6 +491,54 @@ static void MX_USART1_UART_Init(void)
 }
 
 /**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -561,7 +594,50 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Compass_Calibration(uint8_t mag_calibration_enable)
+{
+	if(mag_calibration_enable == 1)
+	{
+		for(int i =0;i<5;i++)
+		{
+			MPU9250_Read_All(&hi2c1);
+			HAL_Delay(1);
+			MPU9250_Parsing_NoOffset(&MPU9250);
+		}
+		MPU9250.Mx_Max = MPU9250.Mx;
+		MPU9250.Mx_Min = MPU9250.Mx;
+		MPU9250.My_Max = MPU9250.My;
+		MPU9250.My_Min = MPU9250.My;
+		MPU9250.Mz_Max = MPU9250.Mz;
+		MPU9250.Mz_Min = MPU9250.Mz;
 
+		while(mag_calibration_enable != 0)
+		{
+			Receive_Command();
+			MPU9250_Read_All(&hi2c1);
+			HAL_Delay(1);
+			MPU9250_Parsing_NoOffset(&MPU9250);
+			if(MPU9250.Mx > MPU9250.Mx_Max) MPU9250.Mx_Max = MPU9250.Mx;
+			if(MPU9250.Mx < MPU9250.Mx_Min) MPU9250.Mx_Min = MPU9250.Mx;
+
+			if(MPU9250.My > MPU9250.My_Max) MPU9250.My_Max = MPU9250.My;
+			if(MPU9250.My < MPU9250.My_Min) MPU9250.My_Min = MPU9250.My;
+
+			if(MPU9250.Mz > MPU9250.Mz_Max) MPU9250.Mz_Max = MPU9250.Mz;
+			if(MPU9250.Mz < MPU9250.Mz_Min) MPU9250.Mz_Min = MPU9250.Mz;
+		}
+		MPU9250.Mx_Offset = (MPU9250.Mx_Max + MPU9250.Mx_Min) / 2;
+		MPU9250.My_Offset = (MPU9250.My_Max + MPU9250.My_Min) / 2;
+		MPU9250.Mz_Offset = (MPU9250.Mz_Max + MPU9250.Mz_Min) / 2;
+
+		*(float*)&Mag_Calib[0] = MPU9250.Mx_Offset;
+		*(float*)&Mag_Calib[4] = MPU9250.My_Offset;
+		*(float*)&Mag_Calib[8] = MPU9250.Mz_Offset;
+
+		W25qxx_EraseSector(0);
+		W25qxx_WriteSector(Mag_Calib, 0, 0, 12);
+	}
+}
 /* USER CODE END 4 */
 
 /**

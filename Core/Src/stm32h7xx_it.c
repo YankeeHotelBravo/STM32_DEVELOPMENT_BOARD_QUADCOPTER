@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32h7xx_it.h"
+#include "FS-iA6B.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -49,6 +50,11 @@ uint8_t tim1_20ms_flag = 0;
 uint8_t uart1_rx_flag = 0;
 uint8_t uart1_rx_data = 0;
 
+uint8_t uart2_rx_flag = 0;
+uint8_t uart2_rx_data = 0;
+uint8_t ibus_rx_buf[32];
+uint8_t ibus_rx_cplt_flag = 0;
+
 extern uint8_t print_mode;
 extern uint8_t mag_calibration_enable;
 /* USER CODE END PV */
@@ -56,6 +62,7 @@ extern uint8_t mag_calibration_enable;
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
 void Receive_Command(void);
+int Is_iBus_Received(uint8_t ibus_rx_cplt_flag);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -69,6 +76,7 @@ extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim7;
 extern DMA_HandleTypeDef hdma_usart1_tx;
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -268,6 +276,20 @@ void USART1_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+
+  /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM7 global interrupt.
   */
 void TIM7_IRQHandler(void)
@@ -311,6 +333,45 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		uart1_rx_flag = 1;
 		HAL_UART_Receive_IT(&huart1, &uart1_rx_data, 1);
 	}
+
+	if(huart->Instance == USART2)
+	{
+		uart2_rx_flag = 1;
+		HAL_UART_Receive_IT(&huart2, &uart2_rx_data, 1);
+
+		static unsigned int cnt = 0;
+
+		switch(cnt)
+		{
+		case 0:
+			if(uart2_rx_data==0x20)
+			{
+				ibus_rx_buf[cnt]=uart2_rx_data;
+				cnt++;
+			}
+			break;
+		case 1:
+			if(uart2_rx_data==0x40)
+			{
+				ibus_rx_buf[cnt]=uart2_rx_data;
+				cnt++;
+			}
+			else
+				cnt=0;
+			break;
+
+		case 31:
+			ibus_rx_buf[cnt]=uart2_rx_data;
+			cnt=0;
+			ibus_rx_cplt_flag = 1;
+			break;
+
+		default:
+			ibus_rx_buf[cnt]=uart2_rx_data;
+			cnt++;
+			break;
+		}
+	}
 }
 
 void Receive_Command(void)
@@ -326,11 +387,26 @@ void Receive_Command(void)
 		case '3': print_mode = 3; break; //Gyro
 		case '4': print_mode = 4; break; //Accel
 		case '5': print_mode = 5; break; //Mag
-		case '6': print_mode = 6; break; //Mag
+		case '6': print_mode = 6; break; //Mag_Offset
+		case '7': print_mode = 7; break; //Controller Channels
 		case '8': mag_calibration_enable = 1; break; //Mag_Raw
 		default: print_mode = 0; mag_calibration_enable = 0; break; // Stop Printing
 		}
 	}
+}
+
+int Is_iBus_Received(uint8_t ibus_rx_cplt_flag)
+{
+	if(ibus_rx_cplt_flag==1)
+		{
+			ibus_rx_cplt_flag=0;
+			if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
+			{
+				iBus_Parsing(&ibus_rx_buf[0], &iBus);
+				return 1;
+			}
+		}
+		return 0;
 }
 /* USER CODE END 1 */
 
