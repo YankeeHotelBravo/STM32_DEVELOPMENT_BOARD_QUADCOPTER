@@ -55,6 +55,7 @@ uint8_t uart2_rx_data = 0;
 uint8_t ibus_rx_buf[32];
 uint8_t ibus_rx_cplt_flag = 0;
 uint8_t ibus_rx_error_flag = 0;
+extern uint8_t iBus_return;
 
 extern uint8_t print_mode;
 extern uint8_t mag_calibration_enable;
@@ -77,10 +78,8 @@ extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim7;
 extern DMA_HandleTypeDef hdma_usart1_tx;
 extern DMA_HandleTypeDef hdma_usart2_rx;
-extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
-extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -266,20 +265,6 @@ void DMA1_Stream2_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 stream3 global interrupt.
-  */
-void DMA1_Stream3_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
-
-  /* USER CODE END DMA1_Stream3_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart3_rx);
-  /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
-
-  /* USER CODE END DMA1_Stream3_IRQn 1 */
-}
-
-/**
   * @brief This function handles I2C1 event interrupt.
   */
 void I2C1_EV_IRQHandler(void)
@@ -322,20 +307,6 @@ void USART2_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USART3 global interrupt.
-  */
-void USART3_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART3_IRQn 0 */
-
-  /* USER CODE END USART3_IRQn 0 */
-  HAL_UART_IRQHandler(&huart3);
-  /* USER CODE BEGIN USART3_IRQn 1 */
-
-  /* USER CODE END USART3_IRQn 1 */
-}
-
-/**
   * @brief This function handles TIM7 global interrupt.
   */
 void TIM7_IRQHandler(void)
@@ -374,6 +345,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+
+
 	if(huart->Instance == USART1)
 	{
 		uart1_rx_flag = 1;
@@ -381,8 +354,36 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	}
 	else if(huart->Instance == USART2)
 	{
-		if((ibus_rx_buf[0] == 0x20) && (ibus_rx_buf[1] == 0x40)) ibus_rx_cplt_flag = 1;
-		else for(int j = 0; j < 32; j++) ibus_rx_buf[j] = 0;
+		static unsigned char cnt=0;
+		uart2_rx_flag = 1;
+		switch(cnt)
+				{
+				case 0:
+					if(uart2_rx_data==0x20)
+					{
+						ibus_rx_buf[cnt]=uart2_rx_data;
+						cnt++;
+					}
+					break;
+				case 1:
+					if(uart2_rx_data==0x40)
+					{
+						ibus_rx_buf[cnt]=uart2_rx_data;
+						cnt++;
+					}
+					else
+						cnt=0;
+					break;
+				case 31:
+					ibus_rx_buf[cnt]=uart2_rx_data;
+					cnt=0;
+					ibus_rx_cplt_flag = 1;
+					break;
+				default:
+					ibus_rx_buf[cnt]=uart2_rx_data;
+					cnt++;
+					break;
+				}
 	}
 }
 
@@ -409,16 +410,17 @@ void Receive_Command(void)
 
 int Is_iBus_Received(uint8_t ibus_rx_cplt_flag)
 {
+	iBus_return = 0;
 	if(ibus_rx_cplt_flag==1)
 		{
 			ibus_rx_cplt_flag=0;
 			if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
 			{
 				iBus_Parsing(&ibus_rx_buf[0], &iBus);
-				return 1;
+				iBus_return = 1;
 			}
 		}
-		return 0;
+		return iBus_return;
 }
 /* USER CODE END 1 */
 

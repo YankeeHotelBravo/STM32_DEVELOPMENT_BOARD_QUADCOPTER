@@ -50,13 +50,10 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim7;
 
-UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
-DMA_HandleTypeDef hdma_usart3_rx;
 
 /* USER CODE BEGIN PV */
 //Timer
@@ -95,8 +92,6 @@ static void MX_USART1_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_UART4_Init(void);
-static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void Compass_Calibration(uint8_t mag_calibration_enable);
 /* USER CODE END PFP */
@@ -146,12 +141,10 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_USART2_UART_Init();
-  MX_UART4_Init();
-  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim7);
 	HAL_UART_Receive_IT(&huart1, &uart1_rx_data, 1);
-	HAL_UART_Receive_DMA(&huart2, &ibus_rx_buf[0], 32);
+	HAL_UART_Receive_DMA(&huart2, &uart2_rx_data, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -444,54 +437,6 @@ static void MX_TIM7_Init(void)
 }
 
 /**
-  * @brief UART4 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_UART4_Init(void)
-{
-
-  /* USER CODE BEGIN UART4_Init 0 */
-
-  /* USER CODE END UART4_Init 0 */
-
-  /* USER CODE BEGIN UART4_Init 1 */
-
-  /* USER CODE END UART4_Init 1 */
-  huart4.Instance = UART4;
-  huart4.Init.BaudRate = 115200;
-  huart4.Init.WordLength = UART_WORDLENGTH_8B;
-  huart4.Init.StopBits = UART_STOPBITS_1;
-  huart4.Init.Parity = UART_PARITY_NONE;
-  huart4.Init.Mode = UART_MODE_TX_RX;
-  huart4.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart4.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart4.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart4.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  huart4.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart4, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(&huart4, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_DisableFifoMode(&huart4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN UART4_Init 2 */
-
-  /* USER CODE END UART4_Init 2 */
-
-}
-
-/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -588,54 +533,6 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART3_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART3_Init 0 */
-
-  /* USER CODE END USART3_Init 0 */
-
-  /* USER CODE BEGIN USART3_Init 1 */
-
-  /* USER CODE END USART3_Init 1 */
-  huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
-  huart3.Init.WordLength = UART_WORDLENGTH_8B;
-  huart3.Init.StopBits = UART_STOPBITS_1;
-  huart3.Init.Parity = UART_PARITY_NONE;
-  huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart3.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart3, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(&huart3, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_DisableFifoMode(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART3_Init 2 */
-
-  /* USER CODE END USART3_Init 2 */
-
-}
-
-/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -654,9 +551,6 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
-  /* DMA1_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
 
 }
 

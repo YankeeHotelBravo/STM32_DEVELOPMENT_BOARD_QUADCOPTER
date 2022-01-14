@@ -7,6 +7,7 @@
 #include "FS-iA6B.h"
 
 FSiA6B_iBus iBus;
+uint8_t iBus_return;
 
 unsigned char iBus_Check_CHKSUM(unsigned char* data, unsigned char len)
 {
