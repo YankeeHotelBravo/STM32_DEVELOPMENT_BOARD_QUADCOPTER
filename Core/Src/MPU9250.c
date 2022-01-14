@@ -6,11 +6,6 @@
  */
 #include "MPU9250.h"
 
-//Initial Value
-uint8_t MPU9250_ASAX = 182;
-uint8_t MPU9250_ASAY = 185;
-uint8_t MPU9250_ASAZ = 170;
-
 //Variables
 const float D2R = 0.01745329252;
 
@@ -141,10 +136,6 @@ uint8_t MPU9250_AK8963_Setup(I2C_HandleTypeDef *I2Cx, MPU9250_t *DataStruct)
 	DataStruct->ASAY = MPU9250_rx_buf[1];
 	DataStruct->ASAZ = MPU9250_rx_buf[2];
 
-	MPU9250_ASAX = DataStruct->ASAX;
-	MPU9250_ASAY = DataStruct->ASAY;
-	MPU9250_ASAZ = DataStruct->ASAZ;
-
 	HAL_I2C_Mem_Read(I2Cx, AK8963_ADDR, AK8963_WIA, 1, &AK8963_WAI, 3, 100);
 	HAL_Delay(10);
 
@@ -192,9 +183,9 @@ void MPU9250_Parsing(MPU9250_t *DataStruct)
 	DataStruct->Ax = DataStruct->Ax_Raw / MPU9250_Acc_LSB;
 	DataStruct->Ay = DataStruct->Ay_Raw / MPU9250_Acc_LSB;
 	DataStruct->Az = ((DataStruct->Az_Raw / MPU9250_Acc_LSB)-0.15) / 1.08;
-	DataStruct->Mx = (DataStruct->Mx_Raw * ((DataStruct->ASAX - 128) / 256 + 1)) / MPU9250_Mag_LSB;
-	DataStruct->My = (DataStruct->My_Raw * ((DataStruct->ASAY - 128) / 256 + 1)) / MPU9250_Mag_LSB;
-	DataStruct->Mz = (DataStruct->Mz_Raw * ((DataStruct->ASAZ - 128) / 256 + 1)) / MPU9250_Mag_LSB;
+	DataStruct->Mx = (DataStruct->Mx_Raw * ((DataStruct->ASAX - 128) / 256 + 1)) * MPU9250_Mag_LSB;
+	DataStruct->My = (DataStruct->My_Raw * ((DataStruct->ASAY - 128) / 256 + 1)) * MPU9250_Mag_LSB;
+	DataStruct->Mz = (DataStruct->Mz_Raw * ((DataStruct->ASAZ - 128) / 256 + 1)) * MPU9250_Mag_LSB;
 
 	DataStruct->Gx -= DataStruct->Gx_Offset;
 	DataStruct->Gy -= DataStruct->Gy_Offset;
@@ -230,7 +221,7 @@ void MPU9250_Parsing_NoOffset(MPU9250_t *DataStruct)
 	DataStruct->Ax = DataStruct->Ax_Raw / MPU9250_Acc_LSB;
 	DataStruct->Ay = DataStruct->Ay_Raw / MPU9250_Acc_LSB;
 	DataStruct->Az = ((DataStruct->Az_Raw / MPU9250_Acc_LSB)-0.15) / 1.08;
-	DataStruct->Mx = (DataStruct->Mx_Raw * ((MPU9250_ASAX - 128) / 256 + 1)) / MPU9250_Mag_LSB;
-	DataStruct->My = (DataStruct->My_Raw * ((MPU9250_ASAY - 128) / 256 + 1)) / MPU9250_Mag_LSB;
-	DataStruct->Mz = (DataStruct->Mz_Raw * ((MPU9250_ASAZ - 128) / 256 + 1)) / MPU9250_Mag_LSB;
+	DataStruct->Mx = (DataStruct->Mx_Raw * ((DataStruct->ASAX - 128) / 256 + 1)) * MPU9250_Mag_LSB;
+	DataStruct->My = (DataStruct->My_Raw * ((DataStruct->ASAY - 128) / 256 + 1)) * MPU9250_Mag_LSB;
+	DataStruct->Mz = (DataStruct->Mz_Raw * ((DataStruct->ASAZ - 128) / 256 + 1)) * MPU9250_Mag_LSB;
 }

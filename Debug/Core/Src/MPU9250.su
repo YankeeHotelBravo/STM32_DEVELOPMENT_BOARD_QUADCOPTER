@@ -1,8 +1,8 @@
-MPU9250.c:30:9:MPU9250_Init	32	static
-MPU9250.c:101:6:MPU9250_Bypass	32	static
-MPU9250.c:112:6:MPU9250_Master	32	static
-MPU9250.c:131:9:MPU9250_AK8963_Setup	32	static
-MPU9250.c:155:6:MPU9250_Slave0_Enable	32	static
-MPU9250.c:170:6:MPU9250_Read_All	24	static
-MPU9250.c:175:6:MPU9250_Parsing	16	static
-MPU9250.c:210:6:MPU9250_Parsing_NoOffset	16	static
+MPU9250.c:25:9:MPU9250_Init	32	static
+MPU9250.c:96:6:MPU9250_Bypass	32	static
+MPU9250.c:107:6:MPU9250_Master	32	static
+MPU9250.c:126:9:MPU9250_AK8963_Setup	32	static
+MPU9250.c:146:6:MPU9250_Slave0_Enable	32	static
+MPU9250.c:161:6:MPU9250_Read_All	24	static
+MPU9250.c:166:6:MPU9250_Parsing	16	static
+MPU9250.c:201:6:MPU9250_Parsing_NoOffset	16	static
