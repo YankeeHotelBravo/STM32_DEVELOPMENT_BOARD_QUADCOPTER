@@ -3,7 +3,6 @@
 M8N_UBX_NAV_POSLLH posllh;
 M8N_UBX_NAV_PVT pvt;
 
-
 const unsigned char UBX_CFG_PRT[] = {
 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00,
 0xD0, 0x08, 0x00, 0x00, 0x80, 0x25, 0x00, 0x00, 0x01, 0x00,
@@ -33,11 +32,7 @@ const unsigned char UBX_CFG_MSGPVT[] = {
 
 void M8N_TransmitData(unsigned char* data, unsigned char len)
 {
-	for(int i=0; i<len; i++)
-	{
-		while(!LL_USART_IsActiveFlag_TXE(UART4));
-		LL_USART_TransmitData8(UART4, *(data+i));
-	}
+	HAL_UART_Transmit(&huart3, data, len, 100);
 }
 
 void M8N_Initialization(void)
@@ -82,7 +77,6 @@ void M8N_UBX_NAV_POSLLH_Parsing(unsigned char* data, M8N_UBX_NAV_POSLLH* posllh)
 
 //	posllh->lon_f64 = posllh->lon/ 10000000.;
 //	posllh->lat_f64 = posllh->lat/ 10000000.;
-
 }
 
 
