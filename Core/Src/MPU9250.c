@@ -175,12 +175,12 @@ void MPU9250_Parsing(MPU9250_t *DataStruct)
 	DataStruct->Mx_Raw = (MPU9250_rx_buf[17] << 8 | MPU9250_rx_buf[16]);
 	DataStruct->Mz_Raw = (MPU9250_rx_buf[19] << 8 | MPU9250_rx_buf[18]);
 
-	DataStruct->Gx = DataStruct->Gx_Raw / MPU9250_Gyro_LSB;
-	DataStruct->Gy = DataStruct->Gy_Raw / MPU9250_Gyro_LSB;
-	DataStruct->Gz = DataStruct->Gz_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Ax = DataStruct->Ax_Raw / MPU9250_Acc_LSB;
 	DataStruct->Ay = DataStruct->Ay_Raw / MPU9250_Acc_LSB;
 	DataStruct->Az = ((DataStruct->Az_Raw / MPU9250_Acc_LSB)-0.15) / 1.08;
+	DataStruct->Gx = DataStruct->Gx_Raw / MPU9250_Gyro_LSB;
+	DataStruct->Gy = DataStruct->Gy_Raw / MPU9250_Gyro_LSB;
+	DataStruct->Gz = DataStruct->Gz_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Mx = (DataStruct->Mx_Raw * ((DataStruct->ASAX - 128) / 256 + 1)) * MPU9250_Mag_LSB;
 	DataStruct->My = (DataStruct->My_Raw * ((DataStruct->ASAY - 128) / 256 + 1)) * MPU9250_Mag_LSB;
 	DataStruct->Mz = (DataStruct->Mz_Raw * ((DataStruct->ASAZ - 128) / 256 + 1)) * MPU9250_Mag_LSB;
@@ -188,12 +188,13 @@ void MPU9250_Parsing(MPU9250_t *DataStruct)
 	DataStruct->Gx -= DataStruct->Gx_Offset;
 	DataStruct->Gy -= DataStruct->Gy_Offset;
 	DataStruct->Gz -= DataStruct->Gz_Offset;
-	DataStruct->Gx_Rad = DataStruct->Gx * D2R;
-	DataStruct->Gy_Rad = DataStruct->Gy * D2R;
-	DataStruct->Gz_Rad = DataStruct->Gz * D2R;
 	DataStruct->Mx -= DataStruct->Mx_Offset;
 	DataStruct->My -= DataStruct->My_Offset;
 	DataStruct->Mz -= DataStruct->Mz_Offset;
+
+	DataStruct->Gx_Rad = DataStruct->Gx * D2R;
+	DataStruct->Gy_Rad = DataStruct->Gy * D2R;
+	DataStruct->Gz_Rad = DataStruct->Gz * D2R;
 }
 
 void MPU9250_Parsing_NoOffset(MPU9250_t *DataStruct)
@@ -208,12 +209,12 @@ void MPU9250_Parsing_NoOffset(MPU9250_t *DataStruct)
 	DataStruct->Mx_Raw = (MPU9250_rx_buf[17] << 8 | MPU9250_rx_buf[16]);
 	DataStruct->Mz_Raw = (MPU9250_rx_buf[19] << 8 | MPU9250_rx_buf[18]);
 
-	DataStruct->Gx = DataStruct->Gx_Raw / MPU9250_Gyro_LSB;
-	DataStruct->Gy = DataStruct->Gy_Raw / MPU9250_Gyro_LSB;
-	DataStruct->Gz = DataStruct->Gz_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Ax = DataStruct->Ax_Raw / MPU9250_Acc_LSB;
 	DataStruct->Ay = DataStruct->Ay_Raw / MPU9250_Acc_LSB;
 	DataStruct->Az = ((DataStruct->Az_Raw / MPU9250_Acc_LSB)-0.15) / 1.08;
+	DataStruct->Gx = DataStruct->Gx_Raw / MPU9250_Gyro_LSB;
+	DataStruct->Gy = DataStruct->Gy_Raw / MPU9250_Gyro_LSB;
+	DataStruct->Gz = DataStruct->Gz_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Mx = (DataStruct->Mx_Raw * ((DataStruct->ASAX - 128) / 256 + 1)) * MPU9250_Mag_LSB;
 	DataStruct->My = (DataStruct->My_Raw * ((DataStruct->ASAY - 128) / 256 + 1)) * MPU9250_Mag_LSB;
 	DataStruct->Mz = (DataStruct->Mz_Raw * ((DataStruct->ASAZ - 128) / 256 + 1)) * MPU9250_Mag_LSB;

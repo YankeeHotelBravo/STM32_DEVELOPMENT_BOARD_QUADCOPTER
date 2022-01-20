@@ -57,7 +57,6 @@ typedef struct MPU9250_t
 	int16_t Ax_Raw;
 	int16_t Ay_Raw;
 	int16_t Az_Raw;
-
 	float Ax;
 	float Ay;
 	float Az;
@@ -65,15 +64,12 @@ typedef struct MPU9250_t
 	int16_t Gx_Raw;
 	int16_t Gy_Raw;
 	int16_t Gz_Raw;
-
-	int16_t Gx_Offset;
-	int16_t Gy_Offset;
-	int16_t Gz_Offset;
-
 	float Gx;
 	float Gy;
 	float Gz;
-
+	float Gx_Offset;
+	float Gy_Offset;
+	float Gz_Offset;
 	float Gx_Rad;
 	float Gy_Rad;
 	float Gz_Rad;
@@ -81,27 +77,21 @@ typedef struct MPU9250_t
 	int16_t Mx_Raw;
 	int16_t My_Raw;
 	int16_t Mz_Raw;
-
 	uint8_t ASAX;
 	uint8_t ASAY;
 	uint8_t ASAZ;
-
 	float Mx_Min;
 	float My_Min;
 	float Mz_Min;
-
 	float Mx_Max;
 	float My_Max;
 	float Mz_Max;
-
 	float Mx_Offset;
 	float My_Offset;
 	float Mz_Offset;
-
 	float Mx;
 	float My;
 	float Mz;
-
 }MPU9250_t;
 
 MPU9250_t MPU9250;
