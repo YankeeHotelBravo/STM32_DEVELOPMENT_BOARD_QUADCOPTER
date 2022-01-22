@@ -1,5 +1,6 @@
 #include "M8N.h"
 
+extern UART_HandleTypeDef huart3;
 M8N_UBX_NAV_POSLLH posllh;
 M8N_UBX_NAV_PVT pvt;
 

@@ -45,6 +45,7 @@
 extern int MPU9250_DRDY;
 
 uint8_t tim1_2ms_flag = 0;
+uint8_t tim1_10ms_flag = 0;
 uint8_t tim1_20ms_flag = 0;
 
 uint8_t uart1_rx_flag = 0;
@@ -65,6 +66,7 @@ extern uint8_t mag_calibration_enable;
 /* USER CODE BEGIN PFP */
 void Receive_Command(void);
 int Is_iBus_Received(uint8_t ibus_rx_cplt_flag);
+int Is_Throttle_Min(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -354,12 +356,19 @@ void TIM7_IRQHandler(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	static unsigned int tim1_2ms_count = 0;
+	static unsigned int tim1_10ms_count = 0;
 	static unsigned int tim1_20ms_count = 0;
 
 	if(htim->Instance == TIM7)
 	{
 		tim1_2ms_count++;
 		if(tim1_2ms_count == 2)
+		{
+			tim1_2ms_count = 0;
+			tim1_2ms_flag = 1;
+		}
+		tim1_2ms_count++;
+		if(tim1_2ms_count == 10)
 		{
 			tim1_2ms_count = 0;
 			tim1_2ms_flag = 1;
@@ -425,15 +434,16 @@ void Receive_Command(void)
 
 		switch(uart1_rx_data)
 		{
-		case '1': print_mode = 1; break; //Roll, Pitch, Yaw
-		case '2': print_mode = 2; break; //Alt Raw, Alt Filt
-		case '3': print_mode = 3; break; //Gyro
-		case '4': print_mode = 4; break; //Accel
-		case '5': print_mode = 5; break; //Mag
-		case '6': print_mode = 6; break; //Mag_Offset
-		case '7': print_mode = 7; break; //Controller Channels
-		case '8': mag_calibration_enable = 1; break; //Mag_Raw
-		default: print_mode = 0; mag_calibration_enable = 0; break; // Stop Printing
+		case 1: print_mode = 1; break; //Roll, Pitch, Yaw
+		case 2: print_mode = 2; break; //Alt Raw, Alt Filt
+		case 3: print_mode = 3; break; //Gyro
+		case 4: print_mode = 4; break; //Accel
+		case 5: print_mode = 5; break; //Mag
+		case 6: print_mode = 6; break; //Mag_Offset
+		case 11: print_mode = 11; break; //Controller Channels
+		case 12: print_mode = 12; break; //GPS
+		case 21: mag_calibration_enable = 1; print_mode = 0; break; //Mag Offset
+		default: mag_calibration_enable = 0; print_mode = 0; break; // Stop Printing
 		}
 	}
 }
@@ -442,15 +452,38 @@ int Is_iBus_Received(uint8_t ibus_rx_cplt_flag)
 {
 	iBus_return = 0;
 	if(ibus_rx_cplt_flag==1)
+	{
+		ibus_rx_cplt_flag=0;
+		if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
 		{
-			ibus_rx_cplt_flag=0;
-			if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
+			iBus_Parsing(&ibus_rx_buf[0], &iBus);
+			if(iBus_isActiveFailSafe(&iBus) == 1)
 			{
-				iBus_Parsing(&ibus_rx_buf[0], &iBus);
+				HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+			}
+			else
+			{
+				HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
 				iBus_return = 1;
 			}
 		}
-		return iBus_return;
+	}
+	return iBus_return;
+}
+
+int Is_Throttle_Min(void)
+{
+	iBus_return = 0;
+	if(ibus_rx_cplt_flag==1)
+	{
+		ibus_rx_cplt_flag=0;
+		if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
+		{
+			iBus_Parsing(&ibus_rx_buf[0], &iBus);
+			if(iBus.LV < 1025) iBus_return =  1;
+		}
+	}
+	return iBus_return;
 }
 /* USER CODE END 1 */
 

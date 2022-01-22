@@ -35,7 +35,7 @@ void iBus_Parsing(unsigned char* data, FSiA6B_iBus* iBus)
 	iBus->SwC = (data[18] | data[19]<<8) & 0x0FFF;
 	iBus->SwD = (data[20] | data[21]<<8) & 0x0FFF;
 
-//	iBus->FailSafe = (iBus->SwB == 1500) && (iBus->SwD == 1500);
+	iBus->FailSafe = (data[13] >> 4);
 }
 
 unsigned char iBus_isActiveFailSafe(FSiA6B_iBus* iBus)

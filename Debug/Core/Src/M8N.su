@@ -1,5 +1,5 @@
-M8N.c:34:6:M8N_TransmitData	24	static
-M8N.c:43:6:M8N_Initialization	8	static
-M8N.c:56:15:M8N_UBX_CHKSUM_Check	24	static
-M8N.c:69:6:M8N_UBX_NAV_POSLLH_Parsing	16	static
-M8N.c:89:6:M8N_UBX_NAV_PVT_Parsing	16	static
+M8N.c:34:6:M8N_TransmitData	16	static
+M8N.c:39:6:M8N_Initialization	8	static
+M8N.c:52:15:M8N_UBX_CHKSUM_Check	24	static
+M8N.c:65:6:M8N_UBX_NAV_POSLLH_Parsing	16	static
+M8N.c:84:6:M8N_UBX_NAV_PVT_Parsing	16	static

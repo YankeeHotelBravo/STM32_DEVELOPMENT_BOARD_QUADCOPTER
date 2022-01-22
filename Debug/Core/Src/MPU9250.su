@@ -5,4 +5,4 @@ MPU9250.c:126:9:MPU9250_AK8963_Setup	32	static
 MPU9250.c:146:6:MPU9250_Slave0_Enable	32	static
 MPU9250.c:161:6:MPU9250_Read_All	24	static
 MPU9250.c:166:6:MPU9250_Parsing	16	static
-MPU9250.c:201:6:MPU9250_Parsing_NoOffset	16	static
+MPU9250.c:200:6:MPU9250_Parsing_NoOffset	16	static
