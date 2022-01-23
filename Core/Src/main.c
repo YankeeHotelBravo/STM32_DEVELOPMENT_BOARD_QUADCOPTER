@@ -53,10 +53,9 @@ TIM_HandleTypeDef htim7;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
-DMA_HandleTypeDef hdma_usart3_rx;
 
 /* USER CODE BEGIN PV */
 //Timer
@@ -96,7 +95,6 @@ static void MX_USART1_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USART3_UART_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void Compass_Calibration(uint8_t mag_calibration_enable);
@@ -118,6 +116,9 @@ int _write(int file, char* p, int len)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	MPU9250.Gx_Offset = 0.43;
+	MPU9250.Gy_Offset = -0.49;
+	MPU9250.Gz_Offset = -1.40;
 
   /* USER CODE END 1 */
 
@@ -148,24 +149,40 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-	HAL_TIM_Base_Start_IT(&htim7); //General Timer
-	HAL_UART_Receive_IT(&huart1, &uart1_rx_data, 1); //FTDI
-	HAL_UART_Receive_DMA(&huart2, &uart2_rx_data, 1); //Receiver
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  HAL_Delay(500);
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
-	//Motor PWM
+  //General Timer HAL
+  HAL_TIM_Base_Start_IT(&htim7);
+  //General PWM LL
+//  LL_TIM_EnableCounter(TIM7);
+//  LL_TIM_EnableIT_UPDATE(TIM7);
+
+  //USART Channels HAL
+  HAL_UART_Receive_DMA(&huart1, &uart1_rx_data, 1); //FTDI
+  HAL_UART_Receive_DMA(&huart2, &uart2_rx_data, 1); //Receiver
+
+	//Motor PWM HAL
 	HAL_TIM_Base_Start_IT(&htim3);
 	HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_4);
+  //Motor PWM LL
+//  LL_TIM_EnableCounter(TIM3);
+//  LL_TIM_CC_EnableChannel(TIM3, LL_TIM_CHANNEL_CH1);
+//  LL_TIM_CC_EnableChannel(TIM3, LL_TIM_CHANNEL_CH2);
+//  LL_TIM_CC_EnableChannel(TIM3, LL_TIM_CHANNEL_CH3);
+//  LL_TIM_CC_EnableChannel(TIM3, LL_TIM_CHANNEL_CH4);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	HAL_Delay(2000);
 
 	//Initialize MPU9250
 	while(MPU9250_Init(&hi2c1, 3, 3, 3, 3) == 0)
@@ -198,17 +215,24 @@ int main(void)
 	MPU9250.Mz_Offset = *(float*)&Mag_Calib[8];
 
 	//Receiver Check
+	printf("Receiver Status Check \n"); HAL_Delay(10);
 	while(Is_iBus_Received(ibus_rx_cplt_flag) == 0)
 	{
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 		HAL_Delay(500);
-		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+		HAL_Delay(500);
 	}
 	while(Is_Throttle_Min() == 0)
 	{
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_GPIO_Port, GPIO_PIN_SET);
 		HAL_Delay(500);
-		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		HAL_GPIO_TogglePin(Buzzer_GPIO_Port, Buzzer_GPIO_Port);
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_GPIO_Port, GPIO_PIN_RESET);
+		HAL_Delay(500);
 	}
+	printf("Receiver OK \n"); HAL_Delay(10);
 
 	//ESC Calibration
 	if(iBus.SwB == 2000 && iBus.SwC == 2000)
@@ -242,6 +266,7 @@ int main(void)
 		if(tim1_20ms_flag == 1)
 		{
 			tim1_20ms_flag = 0;
+//			printf("%.2f \t %.2f \t %.2f \t \n", System_Roll, System_Pitch, System_Yaw);
 
 			switch(print_mode)
 			{
@@ -634,54 +659,6 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART3_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART3_Init 0 */
-
-  /* USER CODE END USART3_Init 0 */
-
-  /* USER CODE BEGIN USART3_Init 1 */
-
-  /* USER CODE END USART3_Init 1 */
-  huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
-  huart3.Init.WordLength = UART_WORDLENGTH_8B;
-  huart3.Init.StopBits = UART_STOPBITS_1;
-  huart3.Init.Parity = UART_PARITY_NONE;
-  huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart3.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart3, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(&huart3, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_DisableFifoMode(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART3_Init 2 */
-
-  /* USER CODE END USART3_Init 2 */
 
 }
 

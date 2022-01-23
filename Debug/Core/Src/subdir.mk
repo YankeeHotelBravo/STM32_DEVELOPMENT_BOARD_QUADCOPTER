@@ -6,7 +6,6 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Core/Src/FS_iA6B.c \
-../Core/Src/M8N.c \
 ../Core/Src/MPU9250.c \
 ../Core/Src/MadgwickAHRS.c \
 ../Core/Src/main.c \
@@ -19,7 +18,6 @@ C_SRCS += \
 
 OBJS += \
 ./Core/Src/FS_iA6B.o \
-./Core/Src/M8N.o \
 ./Core/Src/MPU9250.o \
 ./Core/Src/MadgwickAHRS.o \
 ./Core/Src/main.o \
@@ -32,7 +30,6 @@ OBJS += \
 
 C_DEPS += \
 ./Core/Src/FS_iA6B.d \
-./Core/Src/M8N.d \
 ./Core/Src/MPU9250.d \
 ./Core/Src/MadgwickAHRS.d \
 ./Core/Src/main.d \
@@ -51,7 +48,7 @@ Core/Src/%.o: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/FS_iA6B.d ./Core/Src/FS_iA6B.o ./Core/Src/M8N.d ./Core/Src/M8N.o ./Core/Src/MPU9250.d ./Core/Src/MPU9250.o ./Core/Src/MadgwickAHRS.d ./Core/Src/MadgwickAHRS.o ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/stm32h7xx_hal_msp.d ./Core/Src/stm32h7xx_hal_msp.o ./Core/Src/stm32h7xx_it.d ./Core/Src/stm32h7xx_it.o ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/system_stm32h7xx.d ./Core/Src/system_stm32h7xx.o ./Core/Src/w25qxx.d ./Core/Src/w25qxx.o
+	-$(RM) ./Core/Src/FS_iA6B.d ./Core/Src/FS_iA6B.o ./Core/Src/MPU9250.d ./Core/Src/MPU9250.o ./Core/Src/MadgwickAHRS.d ./Core/Src/MadgwickAHRS.o ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/stm32h7xx_hal_msp.d ./Core/Src/stm32h7xx_hal_msp.o ./Core/Src/stm32h7xx_it.d ./Core/Src/stm32h7xx_it.o ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/system_stm32h7xx.d ./Core/Src/system_stm32h7xx.o ./Core/Src/w25qxx.d ./Core/Src/w25qxx.o
 
 .PHONY: clean-Core-2f-Src
 

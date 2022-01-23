@@ -77,13 +77,13 @@ int Is_Throttle_Min(void);
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_i2c1_rx;
 extern I2C_HandleTypeDef hi2c1;
+extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim7;
+extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart1_tx;
 extern DMA_HandleTypeDef hdma_usart2_rx;
-extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
-extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -234,7 +234,7 @@ void DMA1_Stream0_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream0_IRQn 0 */
 
   /* USER CODE END DMA1_Stream0_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_tx);
+  HAL_DMA_IRQHandler(&hdma_usart1_rx);
   /* USER CODE BEGIN DMA1_Stream0_IRQn 1 */
 
   /* USER CODE END DMA1_Stream0_IRQn 1 */
@@ -262,7 +262,7 @@ void DMA1_Stream2_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
 
   /* USER CODE END DMA1_Stream2_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart2_rx);
+  HAL_DMA_IRQHandler(&hdma_usart1_tx);
   /* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
 
   /* USER CODE END DMA1_Stream2_IRQn 1 */
@@ -276,10 +276,24 @@ void DMA1_Stream3_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
 
   /* USER CODE END DMA1_Stream3_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart3_rx);
+  HAL_DMA_IRQHandler(&hdma_usart2_rx);
   /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
 
   /* USER CODE END DMA1_Stream3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM3 global interrupt.
+  */
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+
+  /* USER CODE END TIM3_IRQn 1 */
 }
 
 /**
@@ -325,26 +339,37 @@ void USART2_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USART3 global interrupt.
-  */
-void USART3_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART3_IRQn 0 */
-
-  /* USER CODE END USART3_IRQn 0 */
-  HAL_UART_IRQHandler(&huart3);
-  /* USER CODE BEGIN USART3_IRQn 1 */
-
-  /* USER CODE END USART3_IRQn 1 */
-}
-
-/**
   * @brief This function handles TIM7 global interrupt.
   */
 void TIM7_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM7_IRQn 0 */
-
+//	static unsigned int tim1_2ms_count = 0;
+//	static unsigned int tim1_10ms_count = 0;
+//	static unsigned int tim1_20ms_count = 0;
+//
+//	if(LL_TIM_IsActiveFlag_UPDATE(TIM7))
+//	{
+//		LL_TIM_ClearFlag_UPDATE(TIM7);
+//		tim1_2ms_count++;
+//		if(tim1_2ms_count == 2)
+//		{
+//			tim1_2ms_count = 0;
+//			tim1_2ms_flag = 1;
+//		}
+//		tim1_10ms_count++;
+//		if(tim1_10ms_count == 10)
+//		{
+//			tim1_10ms_count = 0;
+//			tim1_10ms_flag = 1;
+//		}
+//		tim1_20ms_count++;
+//		if(tim1_20ms_count == 20)
+//		{
+//			tim1_20ms_count = 0;
+//			tim1_20ms_flag = 1;
+//		}
+//	}
   /* USER CODE END TIM7_IRQn 0 */
   HAL_TIM_IRQHandler(&htim7);
   /* USER CODE BEGIN TIM7_IRQn 1 */
@@ -367,11 +392,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			tim1_2ms_count = 0;
 			tim1_2ms_flag = 1;
 		}
-		tim1_2ms_count++;
-		if(tim1_2ms_count == 10)
+		tim1_10ms_count++;
+		if(tim1_10ms_count == 10)
 		{
-			tim1_2ms_count = 0;
-			tim1_2ms_flag = 1;
+			tim1_10ms_count = 0;
+			tim1_10ms_flag = 1;
 		}
 		tim1_20ms_count++;
 		if(tim1_20ms_count == 20)
@@ -384,45 +409,42 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-
-
 	if(huart->Instance == USART1)
 	{
 		uart1_rx_flag = 1;
-		HAL_UART_Receive_IT(&huart1, &uart1_rx_data, 1);
 	}
 	else if(huart->Instance == USART2)
 	{
 		static unsigned char cnt=0;
 		uart2_rx_flag = 1;
 		switch(cnt)
-				{
-				case 0:
-					if(uart2_rx_data==0x20)
-					{
-						ibus_rx_buf[cnt]=uart2_rx_data;
-						cnt++;
-					}
-					break;
-				case 1:
-					if(uart2_rx_data==0x40)
-					{
-						ibus_rx_buf[cnt]=uart2_rx_data;
-						cnt++;
-					}
-					else
-						cnt=0;
-					break;
-				case 31:
-					ibus_rx_buf[cnt]=uart2_rx_data;
-					cnt=0;
-					ibus_rx_cplt_flag = 1;
-					break;
-				default:
-					ibus_rx_buf[cnt]=uart2_rx_data;
-					cnt++;
-					break;
-				}
+		{
+		case 0:
+			if(uart2_rx_data==0x20)
+			{
+				ibus_rx_buf[cnt]=uart2_rx_data;
+				cnt++;
+			}
+			break;
+		case 1:
+			if(uart2_rx_data==0x40)
+			{
+				ibus_rx_buf[cnt]=uart2_rx_data;
+				cnt++;
+			}
+			else
+				cnt=0;
+			break;
+		case 31:
+			ibus_rx_buf[cnt]=uart2_rx_data;
+			cnt=0;
+			ibus_rx_cplt_flag = 1;
+			break;
+		default:
+			ibus_rx_buf[cnt]=uart2_rx_data;
+			cnt++;
+			break;
+		}
 	}
 }
 
@@ -457,6 +479,7 @@ int Is_iBus_Received(uint8_t ibus_rx_cplt_flag)
 		if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
 		{
 			iBus_Parsing(&ibus_rx_buf[0], &iBus);
+//			iBus_return = 1;
 			if(iBus_isActiveFailSafe(&iBus) == 1)
 			{
 				HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);

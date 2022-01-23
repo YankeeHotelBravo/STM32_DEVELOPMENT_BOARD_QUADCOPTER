@@ -1,5 +1,4 @@
 "./Core/Src/FS_iA6B.o"
-"./Core/Src/M8N.o"
 "./Core/Src/MPU9250.o"
 "./Core/Src/MadgwickAHRS.o"
 "./Core/Src/main.o"
