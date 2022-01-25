@@ -83,6 +83,15 @@ extern uint8_t uart2_rx_flag;
 extern uint8_t uart2_rx_data;
 extern uint8_t ibus_rx_buf[32];
 extern uint8_t ibus_rx_cplt_flag;
+unsigned char motor_arming_flag = 0;
+unsigned char is_throttle_middle = 0;
+unsigned char is_yaw_middle = 0;
+unsigned short iBus_SwA_Prev = 0;
+float yaw_heading_reference = 0;
+
+//Motor
+unsigned int ccr1 ,ccr2, ccr3, ccr4;
+unsigned char failsafe_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -243,10 +252,60 @@ int main(void)
 
 	while (1)
 	{
+		//UART Message Check
 		Receive_Command();
 		Compass_Calibration(mag_calibration_enable);
 
+		//Receiver Channel Check
 		Is_iBus_Received(ibus_rx_cplt_flag);
+		if(iBus.SwA == 2000 && iBus_SwA_Prev != 2000)
+		{
+			if(iBus.LV < 1010)
+			{
+				motor_arming_flag = 1;
+				yaw_heading_reference = System_Yaw;
+			}
+		}
+		iBus_SwA_Prev = iBus.SwA;
+		if(iBus.SwA != 2000)
+		{
+			motor_arming_flag = 0;
+		}
+		if(motor_arming_flag == 1)
+				{
+					if(failsafe_flag == 0)
+					{
+						if(iBus.LV > 1010)
+						{
+							TIM3->CCR1 = ccr1 > 20000 ? 19900 : ccr1 < 10000 ? 10000 : ccr1;
+							TIM3->CCR2 = ccr2 > 20000 ? 19900 : ccr2 < 10000 ? 10000 : ccr2;
+							TIM3->CCR3 = ccr3 > 20000 ? 19900 : ccr3 < 10000 ? 10000 : ccr3;
+							TIM3->CCR4 = ccr4 > 20000 ? 19900 : ccr4 < 10000 ? 10000 : ccr4;
+
+						}
+						else
+						{
+							TIM3->CCR1 = 10000;
+							TIM3->CCR2 = 10000;
+							TIM3->CCR3 = 10000;
+							TIM3->CCR4 = 10000;
+						}
+					}
+					else
+					{
+						TIM3->CCR1 = 10000;
+						TIM3->CCR2 = 10000;
+						TIM3->CCR3 = 10000;
+						TIM3->CCR4 = 10000;
+					}
+				}
+				else
+				{
+					TIM3->CCR1 = 10000;
+					TIM3->CCR2 = 10000;
+					TIM3->CCR3 = 10000;
+					TIM3->CCR4 = 10000;
+				}
 
 		//Read MPU9250 + Motor PID
 		if(tim1_2ms_flag == 1)
@@ -256,10 +315,10 @@ int main(void)
 			MPU9250_Parsing(&MPU9250);
 			MadgwickAHRSupdate(MPU9250.Gx_Rad, MPU9250.Gy_Rad, MPU9250.Gz_Rad, MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
 
-			TIM3->CCR1 = 10000 + (iBus.LV-1000)*10;
-			TIM3->CCR2 = 10000 + (iBus.LV-1000)*10;
-			TIM3->CCR3 = 10000 + (iBus.LV-1000)*10;
-			TIM3->CCR4 = 10000 + (iBus.LV-1000)*10;
+			ccr1 = 10000 + (iBus.LV-1000)*10;
+			ccr2 = 10000 + (iBus.LV-1000)*10;
+			ccr3 = 10000 + (iBus.LV-1000)*10;
+			ccr4 = 10000 + (iBus.LV-1000)*10;
 		}
 
 		//Print According to the Input
