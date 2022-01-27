@@ -25,6 +25,7 @@
 #include "w25qxx.h"
 #include "MadgwickAHRS.h"
 #include "FS-iA6B.h"
+#include "PID control.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -128,6 +129,9 @@ int main(void)
 	MPU9250.Gx_Offset = 0.43;
 	MPU9250.Gy_Offset = -0.49;
 	MPU9250.Gz_Offset = -1.40;
+	MPU9250.Mx_Offset = 0;
+	MPU9250.My_Offset = 0;
+	MPU9250.Mz_Offset = 0;
 
   /* USER CODE END 1 */
 
@@ -272,32 +276,15 @@ int main(void)
 			motor_arming_flag = 0;
 		}
 		if(motor_arming_flag == 1)
+		{
+			if(failsafe_flag == 0)
+			{
+				if(iBus.LV > 1010)
 				{
-					if(failsafe_flag == 0)
-					{
-						if(iBus.LV > 1010)
-						{
-							TIM3->CCR1 = ccr1 > 20000 ? 19900 : ccr1 < 10000 ? 10000 : ccr1;
-							TIM3->CCR2 = ccr2 > 20000 ? 19900 : ccr2 < 10000 ? 10000 : ccr2;
-							TIM3->CCR3 = ccr3 > 20000 ? 19900 : ccr3 < 10000 ? 10000 : ccr3;
-							TIM3->CCR4 = ccr4 > 20000 ? 19900 : ccr4 < 10000 ? 10000 : ccr4;
-
-						}
-						else
-						{
-							TIM3->CCR1 = 10000;
-							TIM3->CCR2 = 10000;
-							TIM3->CCR3 = 10000;
-							TIM3->CCR4 = 10000;
-						}
-					}
-					else
-					{
-						TIM3->CCR1 = 10000;
-						TIM3->CCR2 = 10000;
-						TIM3->CCR3 = 10000;
-						TIM3->CCR4 = 10000;
-					}
+					TIM3->CCR1 = ccr1 > 20000 ? 19900 : ccr1 < 10000 ? 10000 : ccr1;
+					TIM3->CCR2 = ccr2 > 20000 ? 19900 : ccr2 < 10000 ? 10000 : ccr2;
+					TIM3->CCR3 = ccr3 > 20000 ? 19900 : ccr3 < 10000 ? 10000 : ccr3;
+					TIM3->CCR4 = ccr4 > 20000 ? 19900 : ccr4 < 10000 ? 10000 : ccr4;
 				}
 				else
 				{
@@ -306,6 +293,22 @@ int main(void)
 					TIM3->CCR3 = 10000;
 					TIM3->CCR4 = 10000;
 				}
+			}
+			else
+			{
+				TIM3->CCR1 = 10000;
+				TIM3->CCR2 = 10000;
+				TIM3->CCR3 = 10000;
+				TIM3->CCR4 = 10000;
+			}
+		}
+		else
+		{
+			TIM3->CCR1 = 10000;
+			TIM3->CCR2 = 10000;
+			TIM3->CCR3 = 10000;
+			TIM3->CCR4 = 10000;
+		}
 
 		//Read MPU9250 + Motor PID
 		if(tim1_2ms_flag == 1)

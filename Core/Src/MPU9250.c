@@ -177,7 +177,7 @@ void MPU9250_Parsing(MPU9250_t *DataStruct)
 
 	DataStruct->Ax = DataStruct->Ax_Raw / MPU9250_Acc_LSB;
 	DataStruct->Ay = DataStruct->Ay_Raw / MPU9250_Acc_LSB;
-	DataStruct->Az = ((DataStruct->Az_Raw / MPU9250_Acc_LSB)-0.15) / 1.08;
+	DataStruct->Az = (DataStruct->Az_Raw / MPU9250_Acc_LSB);
 	DataStruct->Gx = DataStruct->Gx_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Gy = DataStruct->Gy_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Gz = DataStruct->Gz_Raw / MPU9250_Gyro_LSB;
@@ -211,7 +211,7 @@ void MPU9250_Parsing_NoOffset(MPU9250_t *DataStruct)
 
 	DataStruct->Ax = DataStruct->Ax_Raw / MPU9250_Acc_LSB;
 	DataStruct->Ay = DataStruct->Ay_Raw / MPU9250_Acc_LSB;
-	DataStruct->Az = ((DataStruct->Az_Raw / MPU9250_Acc_LSB)-0.15) / 1.08;
+	DataStruct->Az = (DataStruct->Az_Raw / MPU9250_Acc_LSB);
 	DataStruct->Gx = DataStruct->Gx_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Gy = DataStruct->Gy_Raw / MPU9250_Gyro_LSB;
 	DataStruct->Gz = DataStruct->Gz_Raw / MPU9250_Gyro_LSB;
