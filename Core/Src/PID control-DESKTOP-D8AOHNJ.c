@@ -160,11 +160,6 @@ void Single_PID_Calculation(PIDDouble* axis, float set_point, float value, float
 	axis->out.meas_value = value;			//Current Value
 	//error + P output
 	axis->out.error = axis->out.reference - axis->out.meas_value;
-	if(is_yaw == 1)
-	{
-		if(axis->out.error > 180.f) axis->out.error -= 360.f;
-		else if(axis->out.error < -180.f) axis->out.error += 360.f;
-	}
 	axis->out.p_result = axis->out.error * axis->out.kp;
 	axis->out.error_sum += axis->out.error * DT;
 	// i output

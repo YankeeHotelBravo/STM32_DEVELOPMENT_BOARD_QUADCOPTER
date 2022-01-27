@@ -317,28 +317,20 @@ int main(void)
 			MPU9250_Read_All(&hi2c1);
 			MPU9250_Parsing(&MPU9250);
 			MadgwickAHRSupdate(MPU9250.Gx_Rad, MPU9250.Gy_Rad, MPU9250.Gz_Rad, MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
-			Double_PID_Calculation_Rate(&roll,(iBus.LH - 1500) * 0.7 ,System_Roll, MPU9250.Gx, 1000, 500, 0, 1, 0);
-			Double_PID_Calculation_Rate(&pitch, -(iBus.LH - 1500) * 0.7,System_Pitch, MPU9250.Gy, 1000, 500, 0, 1, 0);
+			Double_PID_Calculation_Rate(&roll, (iBus.LH - 1500)*0.7f, System_Roll, MPU9250.Gx , 1000, 250, 0, 1, 0);
+			Double_PID_Calculation_Rate(&pitch, -(iBus.LV - 1500)*0.7f, System_Pitch, MPU9250.Gy, 1000, 250, 0, 1, 0);
 
 			if(iBus.LH > 1480 && iBus.LH < 1520) is_yaw_middle = 1;
 			else is_yaw_middle = 0;
 
 			if(is_yaw_middle == 0)
 			{
-				yaw_heading_reference = System_Yaw;
-				Single_PID_Calculation(&yaw_rate, (iBus.LH-1500), MPU9250.Gz, 200,1 ,1);
-				ccr1 = 10000 + (iBus.LV-1000)*10 + roll.in.pid_result + pitch.in.pid_result - yaw_rate.out.pid_result;
-				ccr2 = 10000 + (iBus.LV-1000)*10 + roll.in.pid_result - pitch.in.pid_result + yaw_rate.out.pid_result;
-				ccr3 = 10000 + (iBus.LV-1000)*10 - roll.in.pid_result - pitch.in.pid_result + yaw_rate.out.pid_result;
-				ccr4 = 10000 + (iBus.LV-1000)*10 - roll.in.pid_result + pitch.in.pid_result - yaw_rate.out.pid_result;
-			}
-			else
-			{
-				Double_PID_Calculation_Rate(&yaw_heading, yaw_heading_reference, System_Yaw, MPU9250.Gz, 400, 150, 0, 1, 1);
-				ccr1 = 10000 + (iBus.LV-1000)*10 + roll.in.pid_result + pitch.in.pid_result - yaw_heading.in.pid_result;
-				ccr2 = 10000 + (iBus.LV-1000)*10 + roll.in.pid_result - pitch.in.pid_result + yaw_heading.in.pid_result;
-				ccr3 = 10000 + (iBus.LV-1000)*10 - roll.in.pid_result - pitch.in.pid_result + yaw_heading.in.pid_result;
-				ccr4 = 10000 + (iBus.LV-1000)*10 - roll.in.pid_result + pitch.in.pid_result - yaw_heading.in.pid_result;
+				yaw_heading_reference = MPU6050_Yaw;
+
+				ccr1 = 10000 + (iBus.LV-1000)*10 + roll.in.pid_result + pitch.in.pid_result;
+				ccr2 = 10000 + (iBus.LV-1000)*10 + roll.in.pid_result - pitch.in.pid_result;
+				ccr3 = 10000 + (iBus.LV-1000)*10 - roll.in.pid_result - pitch.in.pid_result;
+				ccr4 = 10000 + (iBus.LV-1000)*10 - roll.in.pid_result + pitch.in.pid_result;
 			}
 		}
 
