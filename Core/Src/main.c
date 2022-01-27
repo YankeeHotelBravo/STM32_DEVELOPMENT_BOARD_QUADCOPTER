@@ -116,6 +116,7 @@ void ESC_Calibration(void);
 int _write(int file, char* p, int len)
 {
 	HAL_UART_Transmit_DMA(&huart1, p, len);
+	return len;
 }
 /* USER CODE END 0 */
 

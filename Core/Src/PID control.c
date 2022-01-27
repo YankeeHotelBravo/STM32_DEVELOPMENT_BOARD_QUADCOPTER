@@ -279,7 +279,7 @@ void Reset_All_PID_Integrator(void)
 	Reset_PID_Integrator(&pitch.out);
 	Reset_PID_Integrator(&yaw_heading.in);
 	Reset_PID_Integrator(&yaw_heading.out);
-	Reset_PID_Integrator(&yaw_rate);
+	Reset_PID_Integrator(&yaw_rate.out);
 
 	Reset_PID_Integrator(&altitude.in);
 	Reset_PID_Integrator(&altitude.out);
