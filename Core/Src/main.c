@@ -63,6 +63,7 @@ DMA_HandleTypeDef hdma_usart2_rx;
 extern uint8_t tim1_2ms_flag;
 extern uint8_t tim1_10ms_flag;
 extern uint8_t tim1_20ms_flag;
+extern uint8_t tim1_500ms_flag;
 
 //MPU9250
 extern int MPU9250_DRDY;
@@ -84,7 +85,8 @@ extern uint8_t uart2_rx_flag;
 extern uint8_t uart2_rx_data;
 extern uint8_t ibus_rx_buf[32];
 extern uint8_t ibus_rx_cplt_flag;
-unsigned char motor_arming_flag = 0;
+extern uint8_t iBus_failsafe;
+extern uint8_t motor_arming_flag;
 unsigned char is_throttle_middle = 0;
 unsigned char is_yaw_middle = 0;
 unsigned short iBus_SwA_Prev = 0;
@@ -92,7 +94,6 @@ float yaw_heading_reference = 0;
 
 //Motor
 unsigned int ccr1 ,ccr2, ccr3, ccr4;
-unsigned char failsafe_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -278,7 +279,7 @@ int main(void)
 		}
 		if(motor_arming_flag == 1)
 		{
-			if(failsafe_flag == 0)
+			if(iBus_failsafe == 0)
 			{
 				if(iBus.LV > 1010)
 				{
@@ -347,7 +348,6 @@ int main(void)
 		if(tim1_20ms_flag == 1)
 		{
 			tim1_20ms_flag = 0;
-//			printf("%.2f \t %.2f \t %.2f \t \n", System_Roll, System_Pitch, System_Yaw);
 
 			switch(print_mode)
 			{
@@ -360,6 +360,17 @@ int main(void)
 			case 11: printf("%d %d %d %d %d %d %d %d %d %d \n", iBus.RH, iBus.RV, iBus.LV, iBus.LH, iBus.SwA, iBus.SwB, iBus.VrA, iBus.VrB, iBus.SwC, iBus.SwD); break; //Mag_Offset
 			default: break;
 			}
+		}
+
+		//iBus Connection Failsafe
+		if(tim1_500ms_flag == 1)
+		{
+			tim1_500ms_flag = 0;
+			if(iBus_rx_cnt == 0)
+			{
+				iBus_failsafe = 2;
+			}
+			iBus_rx_cnt = 0;
 		}
 
     /* USER CODE END WHILE */

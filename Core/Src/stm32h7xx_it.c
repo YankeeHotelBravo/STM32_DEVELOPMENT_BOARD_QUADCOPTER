@@ -47,6 +47,7 @@ extern int MPU9250_DRDY;
 uint8_t tim1_2ms_flag = 0;
 uint8_t tim1_10ms_flag = 0;
 uint8_t tim1_20ms_flag = 0;
+uint8_t tim1_500ms_flag = 0;
 
 uint8_t uart1_rx_flag = 0;
 uint8_t uart1_rx_data = 0;
@@ -57,6 +58,8 @@ uint8_t ibus_rx_buf[32];
 uint8_t ibus_rx_cplt_flag = 0;
 uint8_t ibus_rx_error_flag = 0;
 extern uint8_t iBus_return;
+extern uint8_t iBus_failsafe;
+extern uint8_t iBus_rx_cnt;
 
 extern uint8_t print_mode;
 extern uint8_t mag_calibration_enable;
@@ -380,9 +383,10 @@ void TIM7_IRQHandler(void)
 /* USER CODE BEGIN 1 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	static unsigned int tim1_2ms_count = 0;
-	static unsigned int tim1_10ms_count = 0;
-	static unsigned int tim1_20ms_count = 0;
+	static unsigned short tim1_2ms_count = 0;
+	static unsigned short tim1_10ms_count = 0;
+	static unsigned short tim1_20ms_count = 0;
+	static unsigned short tim1_500ms_count = 0;
 
 	if(htim->Instance == TIM7)
 	{
@@ -403,6 +407,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		{
 			tim1_20ms_count = 0;
 			tim1_20ms_flag = 1;
+		}
+		tim1_500ms_count++;
+		if(tim1_500ms_count == 20)
+		{
+			tim1_500ms_count = 0;
+			tim1_500ms_flag = 1;
 		}
 	}
 }
@@ -479,14 +489,17 @@ int Is_iBus_Received(uint8_t ibus_rx_cplt_flag)
 		if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
 		{
 			iBus_Parsing(&ibus_rx_buf[0], &iBus);
-//			iBus_return = 1;
+			iBus_rx_cnt++;
 			if(iBus_isActiveFailSafe(&iBus) == 1)
 			{
 				HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+				iBus_failsafe = 1;
+				iBus_return = 0;
 			}
 			else
 			{
 				HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+				iBus_failsafe = 0;
 				iBus_return = 1;
 			}
 		}

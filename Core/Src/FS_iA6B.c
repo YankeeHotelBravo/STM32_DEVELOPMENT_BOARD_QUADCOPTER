@@ -8,6 +8,9 @@
 
 FSiA6B_iBus iBus;
 uint8_t iBus_return;
+uint8_t iBus_failsafe = 0;
+uint8_t motor_arming_flag = 0;
+uint8_t iBus_rx_cnt = 0;
 
 unsigned char iBus_Check_CHKSUM(unsigned char* data, unsigned char len)
 {
