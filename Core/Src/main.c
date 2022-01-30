@@ -91,6 +91,7 @@ unsigned char is_throttle_middle = 0;
 unsigned char is_yaw_middle = 0;
 unsigned short iBus_SwA_Prev = 0;
 float yaw_heading_reference = 0;
+extern uint8_t iBus_rx_cnt;
 
 //Motor
 unsigned int ccr1 ,ccr2, ccr3, ccr4;
@@ -110,6 +111,7 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void Compass_Calibration(uint8_t mag_calibration_enable);
 void ESC_Calibration(void);
+void Stop_Motor(int ccr);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -290,26 +292,17 @@ int main(void)
 				}
 				else
 				{
-					TIM3->CCR1 = 10000;
-					TIM3->CCR2 = 10000;
-					TIM3->CCR3 = 10000;
-					TIM3->CCR4 = 10000;
+					Stop_Motor(10000);
 				}
 			}
 			else
 			{
-				TIM3->CCR1 = 10000;
-				TIM3->CCR2 = 10000;
-				TIM3->CCR3 = 10000;
-				TIM3->CCR4 = 10000;
+				Stop_Motor(10000);
 			}
 		}
 		else
 		{
-			TIM3->CCR1 = 10000;
-			TIM3->CCR2 = 10000;
-			TIM3->CCR3 = 10000;
-			TIM3->CCR4 = 10000;
+			Stop_Motor(10000);
 		}
 
 		//Read MPU9250 + Motor PID
@@ -319,8 +312,8 @@ int main(void)
 			MPU9250_Read_All(&hi2c1);
 			MPU9250_Parsing(&MPU9250);
 			MadgwickAHRSupdate(MPU9250.Gx_Rad, MPU9250.Gy_Rad, MPU9250.Gz_Rad, MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
-			Double_PID_Calculation_Rate(&roll,(iBus.LH - 1500) * 0.7 ,System_Roll, MPU9250.Gx, 1000, 500, 0, 1, 0);
-			Double_PID_Calculation_Rate(&pitch, -(iBus.LH - 1500) * 0.7,System_Pitch, MPU9250.Gy, 1000, 500, 0, 1, 0);
+			Double_PID_Calculation_Rate(&roll, (iBus.LH - 1500) * 0.7, System_Roll, MPU9250.Gx, 1000, 500, 0, 1, 0);
+			Double_PID_Calculation_Rate(&pitch, -(iBus.LH - 1500) * 0.7, System_Pitch, MPU9250.Gy, 1000, 500, 0, 1, 0);
 
 			if(iBus.LH > 1480 && iBus.LH < 1520) is_yaw_middle = 1;
 			else is_yaw_middle = 0;
@@ -885,6 +878,14 @@ void ESC_Calibration(void)
 	TIM3->CCR3 = 10000;
 	TIM3->CCR4 = 10000;
 	HAL_Delay(8000);
+}
+
+void Stop_Motor(int ccr)
+{
+	TIM3->CCR1 = ccr;
+	TIM3->CCR2 = ccr;
+	TIM3->CCR3 = ccr;
+	TIM3->CCR4 = ccr;
 }
 /* USER CODE END 4 */
 
