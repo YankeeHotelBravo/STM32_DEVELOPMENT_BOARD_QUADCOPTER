@@ -290,20 +290,15 @@ int main(void)
 					TIM3->CCR3 = ccr3 > 20000 ? 19900 : ccr3 < 10000 ? 10000 : ccr3;
 					TIM3->CCR4 = ccr4 > 20000 ? 19900 : ccr4 < 10000 ? 10000 : ccr4;
 				}
-				else
-				{
-					Stop_Motor(10000);
-				}
+				else Stop_Motor(10000);
 			}
-			else
-			{
-				Stop_Motor(10000);
-			}
+			else Stop_Motor(10000);
 		}
 		else
-		{
 			Stop_Motor(10000);
-		}
+
+		if(iBus.SwD == 2000) HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
+		else HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
 
 		//Read MPU9250 + Motor PID
 		if(tim1_2ms_flag == 1)
