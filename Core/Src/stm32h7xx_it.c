@@ -85,8 +85,10 @@ extern TIM_HandleTypeDef htim7;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart1_tx;
 extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -286,6 +288,20 @@ void DMA1_Stream3_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles DMA1 stream4 global interrupt.
+  */
+void DMA1_Stream4_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream4_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart3_rx);
+  /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream4_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM3 global interrupt.
   */
 void TIM3_IRQHandler(void)
@@ -339,6 +355,20 @@ void USART2_IRQHandler(void)
   /* USER CODE BEGIN USART2_IRQn 1 */
 
   /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART3 global interrupt.
+  */
+void USART3_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_IRQn 0 */
+
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
+
+  /* USER CODE END USART3_IRQn 1 */
 }
 
 /**
@@ -482,7 +512,6 @@ void Receive_Command(void)
 
 int Is_iBus_Received(uint8_t ibus_rx_cplt_flag)
 {
-	iBus_return = 0;
 	if(ibus_rx_cplt_flag==1)
 	{
 		ibus_rx_cplt_flag=0;
@@ -492,34 +521,30 @@ int Is_iBus_Received(uint8_t ibus_rx_cplt_flag)
 			iBus_rx_cnt++;
 			if(iBus_isActiveFailSafe(&iBus) == 1)
 			{
-				HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
 				iBus_failsafe = 1;
-				iBus_return = 0;
 			}
 			else
 			{
-				HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
 				iBus_failsafe = 0;
-				iBus_return = 1;
+				return 1;
 			}
 		}
 	}
-	return iBus_return;
+	return 0;
 }
 
 int Is_Throttle_Min(void)
 {
-	iBus_return = 0;
 	if(ibus_rx_cplt_flag==1)
 	{
 		ibus_rx_cplt_flag=0;
 		if(iBus_Check_CHKSUM(&ibus_rx_buf[0],32)==1)
 		{
 			iBus_Parsing(&ibus_rx_buf[0], &iBus);
-			if(iBus.LV < 1025) iBus_return =  1;
+			if(iBus.LV < 1025) return 1;
 		}
 	}
-	return iBus_return;
+	return 0;
 }
 /* USER CODE END 1 */
 

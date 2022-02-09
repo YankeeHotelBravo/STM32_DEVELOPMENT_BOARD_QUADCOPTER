@@ -16,6 +16,7 @@ typedef struct _FSiA6B_iBus
 	unsigned short SwB;
 	unsigned short SwC;
 	unsigned short SwD;
+	unsigned short SwD_Prev;
 	unsigned short VrA;
 	unsigned short VrB;
 
