@@ -301,8 +301,13 @@ int main(void)
 			Compass_Calibration(mag_calibration_enable | (iBus.SwB == 2000 && iBus.SwC == 1000));
 		}
 
-		if(iBus.SwD == 2000 && iBus.SwD_Prev != 2000) ; //Toggle LED, Buzzer On
-		if(iBus.SwD == 1000 && iBus.SwD_Prev != 1000) ; //Buzzer Off
+		if(iBus.SwD == 2000 && iBus.SwD_Prev != 2000)
+		{
+			HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET); //Toggle LED, Buzzer On
+			HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+		}
+		if(iBus.SwD == 1000 && iBus.SwD_Prev != 1000) HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);//Buzzer Off
+
 		iBus.SwD_Prev = iBus.SwD;
 
 
