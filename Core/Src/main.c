@@ -91,7 +91,6 @@ extern uint8_t iBus_failsafe;
 extern uint8_t motor_arming_flag;
 unsigned char is_throttle_middle = 0;
 unsigned char is_yaw_middle = 0;
-unsigned short iBus_SwA_Prev = 0;
 float yaw_heading_reference = 0;
 extern uint8_t iBus_rx_cnt;
 
@@ -172,9 +171,9 @@ int main(void)
   MX_TIM3_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
   HAL_Delay(500);
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
 
   //General Timer HAL
   HAL_TIM_Base_Start_IT(&htim7);
@@ -239,18 +238,16 @@ int main(void)
 	printf("Receiver Status Check \n"); HAL_Delay(10);
 	while(Is_iBus_Received(ibus_rx_cplt_flag) == 0)
 	{
-		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
 		HAL_Delay(500);
-		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
 		HAL_Delay(500);
 	}
 	while(Is_Throttle_Min() == 0)
 	{
-		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_GPIO_Port, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
 		HAL_Delay(500);
-		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_GPIO_Port, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
 		HAL_Delay(500);
 	}
 	printf("Receiver OK \n"); HAL_Delay(10);
@@ -266,11 +263,11 @@ int main(void)
 	{
 		//UART Message Check
 		Receive_Command();
-		Compass_Calibration(mag_calibration_enable);
+
 
 		//Receiver Channel Check
 		Is_iBus_Received(ibus_rx_cplt_flag);
-		if(iBus.SwA == 2000 && iBus_SwA_Prev != 2000)
+		if(iBus.SwA == 2000 && iBus.SwA_Prev != 2000)
 		{
 			if(iBus.LV < 1010)
 			{
@@ -278,7 +275,7 @@ int main(void)
 				yaw_heading_reference = System_Yaw;
 			}
 		}
-		iBus_SwA_Prev = iBus.SwA;
+		iBus.SwA_Prev = iBus.SwA;
 		if(iBus.SwA != 2000)
 		{
 			motor_arming_flag = 0;
@@ -299,10 +296,15 @@ int main(void)
 			else Stop_Motor(10000);
 		}
 		else
+		{
 			Stop_Motor(10000);
+			Compass_Calibration(mag_calibration_enable | (iBus.SwB == 2000 && iBus.SwC == 1000));
+		}
 
-		if(iBus.SwD == 2000) HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_SET);
-		else HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
+		if(iBus.SwD == 2000 && iBus.SwD_Prev != 2000) ; //Toggle LED, Buzzer On
+		if(iBus.SwD == 1000 && iBus.SwD_Prev != 1000) ; //Buzzer Off
+		iBus.SwD_Prev = iBus.SwD;
+
 
 		//Read MPU9250 + Motor PID
 		if(tim1_2ms_flag == 1)
@@ -312,7 +314,7 @@ int main(void)
 			MPU9250_Parsing(&MPU9250);
 			MadgwickAHRSupdate(MPU9250.Gx_Rad, MPU9250.Gy_Rad, MPU9250.Gz_Rad, MPU9250.Ax, MPU9250.Ay, MPU9250.Az, MPU9250.Mx, MPU9250.My, MPU9250.Mz);
 			Double_PID_Calculation_Rate(&roll, (iBus.LH - 1500) * 0.7, System_Roll, MPU9250.Gx, 1000, 500, 0, 1, 0);
-			Double_PID_Calculation_Rate(&pitch, -(iBus.LH - 1500) * 0.7, System_Pitch, MPU9250.Gy, 1000, 500, 0, 1, 0);
+			Double_PID_Calculation_Rate(&pitch, -(iBus.LV - 1500) * 0.7, System_Pitch, MPU9250.Gy, 1000, 500, 0, 1, 0);
 
 			if(iBus.LH > 1480 && iBus.LH < 1520) is_yaw_middle = 1;
 			else is_yaw_middle = 0;
@@ -833,16 +835,19 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(Buzzer_GPIO_Port, Buzzer_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(W25qxx_CS_GPIO_Port, W25qxx_CS_Pin, GPIO_PIN_RESET);
@@ -854,12 +859,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(Buzzer_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LED_Pin */
-  GPIO_InitStruct.Pin = LED_Pin;
+  /*Configure GPIO pin : LED1_Pin */
+  GPIO_InitStruct.Pin = LED1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(LED1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LED0_Pin */
+  GPIO_InitStruct.Pin = LED0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED0_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : W25qxx_CS_Pin */
   GPIO_InitStruct.Pin = W25qxx_CS_Pin;
@@ -890,6 +902,7 @@ void Compass_Calibration(uint8_t mag_calibration_enable)
 
 		while(mag_calibration_enable != 0)
 		{
+			Is_iBus_Received(ibus_rx_cplt_flag);
 			Receive_Command();
 			MPU9250_Read_All(&hi2c1);
 			HAL_Delay(1);
