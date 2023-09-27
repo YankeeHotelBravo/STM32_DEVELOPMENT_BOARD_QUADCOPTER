@@ -1,14 +1,16 @@
-# Table of Content
-1.INTRODUCTION
-2. Materials
-3. Assembly
-4. Sensor
-5. Motor Control
-6. PID CONTROL INTRODUCTION
-7. YAW CONTROL
-8. ROLL, PITCH CONTROL
-9. ALTITUDE CONTROL (WIP)
-10. GPS COORDINATE CONTROL (WIP)
+# ABOUT THIS PROJECT
+
+TABLE OF CONTENTS </BR>
+1.INTRODUCTION </BR>
+2. Materials </BR>
+3. Assembly </BR>
+4. Sensor </BR>
+5. Motor Control </BR>
+6. PID CONTROL INTRODUCTION </BR>
+7. YAW CONTROL </BR>
+8. ROLL, PITCH CONTROL </BR>
+9. ALTITUDE CONTROL (WIP) </BR>
+10. GPS COORDINATE CONTROL (WIP) </BR>
 
 
 This project is my personal drone project made out of stm32 development board and other quadcopter components. The project is still work in progress, though I haven't touched on this project for an while. The project has been kept private for an while, because it was not written well or in organized way for others to understand easily. Still, I decided to keep this repository public so that others who were interested in my other GY86 repository may get some idea of how to utilize the sensor in quadcopter field.
